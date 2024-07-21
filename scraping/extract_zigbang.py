@@ -78,7 +78,7 @@ def extract_room_info(id, delay=2):
 
                 room_data["deposit"] = item_data["price"]["deposit"]
                 room_data["rent"] = item_data["price"]["rent"]
-                room_data["maintenance_free"] = item_data["manageCost"]["amount"]
+                room_data["maintenance_fee"] = item_data["manageCost"]["amount"]
                 room_data["latitude"] = item_data["location"]["lat"]
                 room_data["longitude"] = item_data["location"]["lng"]
                 room_data["address"] = item_data["jibunAddress"] if "jibunAddress" in item_data.keys() else item_data["addressOrigin"]["localText"]
@@ -91,15 +91,12 @@ def extract_room_info(id, delay=2):
                 
                 for facility in facilitys.keys():
                     facility_info = extract_nearest_facilities_info(room_data["longitude"], room_data["latitude"], facility)
-                    # room_data[f"{facility}_count"] = facility_info["count"]
-                    # room_data[f"nearest_{facility}_distance"] = facility_info["nearest_distance"]
-                    
                     room_data[facilitys[facility]+"_count"] = facility_info["count"]
                     room_data[f"nearest_"+facilitys[facility]+"_distance"] = facility_info["nearest_distance"]
 
                 room_data["title"] = item_data["title"]
                 room_data["description"] = item_data["description"]
-                room_data["image_link"] = item_data["imageThumbnail"]
+                room_data["image_link"] = item_data["imageThumbnail"] + "?w=400&h=300&q=70&a=1"
 
                 return room_data
             else:
