@@ -1,6 +1,7 @@
 import requests
 import csv
 import re
+import pandas as pd
 
 # API 키 모음
 vworld_api_key = "F5B25757-5CED-3188-BB82-B0A2522DCB6A"
@@ -58,7 +59,13 @@ def split_and_convert_korean_number(s):
 def extract_nearest_facilities_info(lng, lat, category, radius=500) -> dict:
     url = "https://dapi.kakao.com/v2/local/search/keyword.json"
     headers = {"Authorization": kakao_api_key}
-    params = {"query": category, "x": lng, "y": lat, "radius": radius, "category_group_code": category_group_code[category]}
+    params = {
+        "query": category,
+        "x": lng,
+        "y": lat,
+        "radius": radius,
+        "category_group_code": category_group_code[category],
+    }
 
     data = requests.get(url, params=params, headers=headers).json()
     count = data["meta"]["total_count"]
@@ -139,9 +146,7 @@ def process_rooms(room_list):
         hospital = extract_nearest_facilities_info(lng, lat, "병원", 946)
 
         # 부동산 정보 받아오기
-        registration_url = (
-            f"https://www.dabangapp.com/api/3/new-room/detail?api_version=3.0.1&call_type=web&room_id={id}&version=1"
-        )
+        registration_url = f"https://www.dabangapp.com/api/3/new-room/detail?api_version=3.0.1&call_type=web&room_id={id}&version=1"
         response = requests.get(registration_url, headers=headers)
         if response.status_code == 200:
             data = response.json()
@@ -234,6 +239,12 @@ def save_to_csv(data, filename):
     print(f"Data has been written to {filename}")
 
 
+def save_to_parquet(data, filename):
+    df = pd.DataFrame(data)
+    df.to_parquet(filename, engine="pyarrow", index=False)
+    print(f"Data has been written to {filename}")
+
+
 def get_data_by_range(start, end):
     data_for_csv = []
     cnt = 0
@@ -245,7 +256,8 @@ def get_data_by_range(start, end):
             cnt += len(room_list)
         else:
             break
-    save_to_csv(data_for_csv, "dabang_sampling2.csv")
+    save_to_csv(data_for_csv, "dabang_sampling.csv")
+    # save_to_parquet(data_for_csv, "dabang_sampling2.parquet")
     print(f"총 개수: {cnt}")
 
 
@@ -268,5 +280,23 @@ def get_data_all():
         else:
             print("No more rooms found. Exiting.")
             break
-    save_to_csv(data_for_csv, "dabang_monthly.csv")
+    # save_to_csv(data_for_csv, "dabang_monthly.csv")
+    save_to_parquet(data_for_csv, "dabang.parquet")
     print(f"총 개수: {cnt}")
+
+
+def read_parquet_file(filename):
+    df = pd.read_parquet(filename, engine="pyarrow")
+
+    # 데이터 확인
+    print(df.head())
+    print(df.info())
+    print(df.describe())
+
+    return df
+
+
+# get_data_by_range(1, 2)
+# Parquet 파일 읽기 및 확인
+# filename = "dabang_sampling2.parquet"
+# dataframe = read_parquet_file(filename)
