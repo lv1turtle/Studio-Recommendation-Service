@@ -13,7 +13,7 @@ def extract_room_ids_from_geohash(geohash) -> list:
     
     if response.status_code == 200:
         items = response.json()["items"]
-        ids = [item["itemId"] for item in items]
+        ids = [str(item["itemId"]) for item in items]
 
         return ids  
     else:
@@ -48,14 +48,12 @@ def extract_room_info(id, delay=2):
     url = f"https://apis.zigbang.com/v3/items/{id}?version=&domain=zigbang"
     
     room_type_to_eng = {"원룸":"oneroom", "빌라":"villa", "오피스텔":"officetel"}
-    facilitys = { "대형마트":"largemart", \
+    facilitys = { "대형마트":"marcket", \
                     "편의점":"store", \
                     "지하철역":"subway", \
-                    "은행":"bank", \
                     "음식점":"restaurant", \
                     "카페":"cafe", \
-                    "병원":"hospital", \
-                    "약국":"pharmacy" }
+                    "병원":"hospital"}
 
     response = requests.get(url)
     sleep(delay)
@@ -67,7 +65,8 @@ def extract_room_info(id, delay=2):
             if item_data["status"] == "open":
                 room_data = dict()
 
-                room_data["room_id"] = item_data["itemId"]
+                room_data["room_id"] = str(item_data["itemId"])
+                room_data["platform"] = "직방"
                 room_data["room_type"] = item_data["roomType"]
                 room_data["service_type"] = item_data["serviceType"]
                 room_data["area"] = item_data["area"]["전용면적M2"]
