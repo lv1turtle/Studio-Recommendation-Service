@@ -51,11 +51,9 @@ def extract_room_info(id, delay=2):
     facilitys = { "대형마트":"largemart", \
                     "편의점":"store", \
                     "지하철역":"subway", \
-                    "은행":"bank", \
                     "음식점":"restaurant", \
                     "카페":"cafe", \
-                    "병원":"hospital", \
-                    "약국":"pharmacy" }
+                    "병원":"hospital"}
 
     response = requests.get(url)
     sleep(delay)
@@ -68,6 +66,7 @@ def extract_room_info(id, delay=2):
                 room_data = dict()
 
                 room_data["room_id"] = item_data["itemId"]
+                room_data["platform"] = "직방"
                 room_data["room_type"] = item_data["roomType"]
                 room_data["service_type"] = item_data["serviceType"]
                 room_data["area"] = item_data["area"]["전용면적M2"]
