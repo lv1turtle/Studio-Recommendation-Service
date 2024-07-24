@@ -1,13 +1,13 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-
+import pandas as pd
 from datetime import datetime
 from datetime import timedelta
 import logging
 
 from extract_zigbang import extract_room_ids_from_geohash, extract_room_info
-import pandas as pd
+
 
 
 
@@ -38,7 +38,7 @@ def extract_room_infos(**context):
 
     data = []
 
-    for i, id in enumerate(ids[:50]):
+    for i, id in enumerate(ids):
         print(i, id)
         if i%5000 == 0:
             room = extract_room_info(id, delay=2)
@@ -62,7 +62,7 @@ def load_s3(**context):
     print("[ load s3 start ]")
 
     df = pd.DataFrame(data)
-    df.to_csv("/opt/airflow/data/zigbang_sampling.csv", index=False, encoding="utf-8")
+    df.to_csv(filename, index=False, encoding="utf-8")
     
     # upload it to S3
     hook = S3Hook('s3_conn')
@@ -86,7 +86,11 @@ dag = DAG(
     }
 )
 
-
+params = {
+    'filename': '/opt/airflow/data/zigbang_sampling.csv',
+    'key': 'zigbang/zigbang_sampling.csv',
+    'bucket_name': 'team-ariel-1-bucket'
+}
 
 
 extract_room_ids = PythonOperator(
@@ -99,12 +103,6 @@ extract_room_infos = PythonOperator(
     python_callable = extract_room_infos,
     dag = dag
 )
-
-params = {
-    'filename': '/opt/airflow/data/zigbang_sampling.csv',
-    'key': 'zigbang/zigbang_sampling.csv',
-    'bucket_name': 'team-ariel-1-bucket'
-}
 
 load_s3 = PythonOperator(
     task_id='load_s3',
