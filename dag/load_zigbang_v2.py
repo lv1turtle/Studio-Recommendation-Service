@@ -1,5 +1,3 @@
-## incremental update
-
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -36,7 +34,7 @@ def extract_room_ids(**context):
 
     logging.info(f"[ total id count : {len(ids)} ]\n")
 
-    return ids
+    return ids[:5]
 
 
 # Redshift에서 기존 ID 가져오기
@@ -137,20 +135,20 @@ def incremental_update_redshift(**context):
                 cur.execute("BEGIN;")
                 sql = f"""
                     INSERT INTO {schema}.{table} (
-                        room_id, room_type, service_type, area, floor, deposit, rent, maintenance_fee, latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
-                        marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, nearest_subway_distance, bank_count, nearest_bank_distance, restaurant_count, 
-                        nearest_restaurant_distance, cafe_count, nearest_cafe_distance, hospital_count, nearest_hospital_distance, pharmacy_count, nearest_pharmacy_distance, 
+                        room_id, platfrom, room_type, service_type, area, floor, deposit, rent, maintenance_fee, latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
+                        marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, nearest_subway_distance, restaurant_count, 
+                        nearest_restaurant_distance, cafe_count, nearest_cafe_distance, hospital_count, nearest_hospital_distance, 
                         title, description, image_link
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """
                 cur.execute(sql, (
-                    record["room_id"], record["room_type"], record["service_type"], record["area"], record["floor"], record["deposit"], record["rent"], record["maintenance_fee"], record["latitude"], \
+                    record["room_id"], record["platform"], record["room_type"], record["service_type"], record["area"], record["floor"], record["deposit"], record["rent"], record["maintenance_fee"], record["latitude"], \
                     record["longitude"], record["address"], record["property_link"], record["registration_number"], record["agency_name"], record["agent_name"], record["marcket_count"], record["nearest_marcket_distance"], \
-                    record["store_count"], record["nearest_store_distance"], record["subway_count"], record["nearest_subway_distance"], record["bank_count"], record["nearest_bank_distance"], \
+                    record["store_count"], record["nearest_store_distance"], record["subway_count"], record["nearest_subway_distance"], \
                     record["restaurant_count"], record["nearest_restaurant_distance"], record["cafe_count"], record["nearest_cafe_distance"], record["hospital_count"], record["nearest_hospital_distance"], \
-                    record["pharmacy_count"], record["nearest_pharmacy_distance"], record["title"], record["description"], record["image_link"]))
+                    record["title"], record["description"], record["image_link"]))
                 
                 cur.execute("COMMIT;") 
 
