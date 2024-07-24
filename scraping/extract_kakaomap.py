@@ -2,17 +2,35 @@ import requests
 
 url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 headers = {"Authorization": "KakaoAK 0b802f8cc02b1b1343b8706eaf18efd1"}
-category_group_code = {"대형마트":"MT1",
-                        "편의점":"CS2",
-                        "지하철역":"SW8",
-                        "은행":"BK9",
-                        "음식점":"FD6",
-                        "카페":"CE7",
-                        "병원":"HP8",
-                        "약국":"PM9"}
+category_group = {
+                    "대형마트":{
+                        "code":"MT1",
+                        "radius":1712,
+                    },
+                    "편의점":{
+                        "code":"CS2",
+                        "radius":629,
+                    },
+                    "지하철역":{
+                        "code":"SW8",
+                        "radius":1058,
+                    },
+                    "음식점":{
+                        "code":"FD6",
+                        "radius":500,
+                    },
+                    "카페":{
+                        "code":"CE7",
+                        "radius":987,
+                    },
+                    "병원":{
+                        "code":"HP8",
+                        "radius":946,
+                    }
+                }
 
-def extract_nearest_facilities_info(lng, lat, category, radius=500) -> dict:
-    params = {'query' : category, 'x' : lng, 'y' : lat, 'radius' : radius, 'category_group_code' : category_group_code[category]}
+def extract_nearest_facilities_info(lng, lat, category) -> dict:
+    params = {'query' : category, 'x' : lng, 'y' : lat, 'radius' : category_group[category]["radius"], 'category_group_code' : category_group[category]["code"]}
     
     response = requests.get(url, params=params, headers=headers)
     
