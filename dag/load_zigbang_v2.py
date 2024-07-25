@@ -135,12 +135,12 @@ def incremental_update_redshift(**context):
                 cur.execute("BEGIN;")
                 sql = f"""
                     INSERT INTO {schema}.{table} (
-                        room_id, platfrom, room_type, service_type, area, floor, deposit, rent, maintenance_fee, latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
+                        room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
                         marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, nearest_subway_distance, restaurant_count, 
                         nearest_restaurant_distance, cafe_count, nearest_cafe_distance, hospital_count, nearest_hospital_distance, 
                         title, description, image_link
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """
                 cur.execute(sql, (
