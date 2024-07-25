@@ -9,8 +9,6 @@ import logging
 from extract_zigbang import extract_room_ids_from_geohash, extract_room_info
 
 
-
-
 def extract_room_ids(**context):
     # geohashs = ["wydnp", "wydju", "wydjv", "wydjy", "wydjz", "wydjs", "wydjt", "wydjw", "wydjx", "wydjk", "wydjm", "wydjq", "wydjr", "wydjh", "wydjj", "wydjn", "wydjp", \
     #             "wydhzx", "wydhzz", "wydhzw", "wydhzy", "wydq8", "wydq9", "wydqd", "wydqe", "wydqs", "wydq2", "wydq3", "wydq6", "wydq7", "wydqk", "wydq0", "wydq1", "wydq4", "wydq5", "wydqh", \
@@ -28,7 +26,7 @@ def extract_room_ids(**context):
 
     logging.info(f"[ total id : {len(ids)} ]\n")
 
-    return ids
+    return ids[:5]
 
 
 def extract_room_infos(**context):
@@ -55,14 +53,39 @@ def extract_room_infos(**context):
 
 def load_s3(**context):
     data = context["task_instance"].xcom_pull(key="return_value", task_ids='extract_room_infos')
-    filename = context["params"]["filename"]
-    key = context["params"]["key"]
+
+    name = f"zigbang_{datetime.now().strftime('%y%m%d')}_v1.parquet"
+    filename = context["params"]["filepath"] + name
+    key = context["params"]["key"] + name
+    
     bucket_name = context["params"]["bucket_name"]
 
     print("[ load s3 start ]")
 
     df = pd.DataFrame(data)
-    df.to_csv(filename, index=False, encoding="utf-8")
+
+    df['area'] = df['area'].astype('float32')
+    df['deposit'] = df['deposit'].astype('Int64')
+    df['rent'] = df['rent'].astype('Int64')
+    df['maintenance_fee'] = df['maintenance_fee'].astype('float32')
+    df['latitude'] = df['latitude'].astype('float32')
+    df['longitude'] = df['longitude'].astype('float32')
+
+    df['marcket_count'] = df['marcket_count'].astype('Int64')
+    df['store_count'] = df['store_count'].astype('Int64')
+    df['subway_count'] = df['subway_count'].astype('Int64')
+    df['restaurant_count'] = df['restaurant_count'].astype('Int64')
+    df['cafe_count'] = df['cafe_count'].astype('Int64')
+    df['hospital_count'] = df['hospital_count'].astype('Int64')
+
+    df['nearest_marcket_distance'] = df['nearest_marcket_distance'].astype('Int64')
+    df['nearest_store_distance'] = df['nearest_store_distance'].astype('Int64')
+    df['nearest_subway_distance'] = df['nearest_subway_distance'].astype('Int64')
+    df['nearest_restaurant_distance'] = df['nearest_restaurant_distance'].astype('Int64')
+    df['nearest_cafe_distance'] = df['nearest_cafe_distance'].astype('Int64')
+    df['nearest_hospital_distance'] = df['nearest_hospital_distance'].astype('Int64')
+    
+    df.to_parquet(filename, index=False, encoding="utf-8")
     
     # upload it to S3
     hook = S3Hook('s3_conn')
@@ -87,8 +110,8 @@ dag = DAG(
 )
 
 params = {
-    'filename': '/opt/airflow/data/zigbang_sampling.csv',
-    'key': 'zigbang/zigbang_sampling.csv',
+    'filepath': '/opt/airflow/data/',
+    'key': 'zigbang/',
     'bucket_name': 'team-ariel-1-bucket'
 }
 

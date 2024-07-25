@@ -153,14 +153,39 @@ def extend_facilities_info(**context):
 # 추가로 수집한 매물 데이터 csv에 적재
 def load_s3_facilities_info(**context):
     data = context["task_instance"].xcom_pull(key="return_value", task_ids='extend_facilities_info')
-    filename = context["params"]["filename"]
-    key = context["params"]["key"]
+
+    name = f"zigbang_{datetime.now().strftime('%y%m%d')}.parquet"
+    filename = context["params"]["filepath"] + name
+    key = context["params"]["key"] + name
+
     bucket_name = context["params"]["bucket_name"]
 
     print("[ load s3 start ]")
 
     df = pd.DataFrame(data)
-    df.to_csv(filename, index=False, encoding="utf-8")
+
+    df['area'] = df['area'].astype('float32')
+    df['deposit'] = df['deposit'].astype('Int64')
+    df['rent'] = df['rent'].astype('Int64')
+    df['maintenance_fee'] = df['maintenance_fee'].astype('float32')
+    df['latitude'] = df['latitude'].astype('float32')
+    df['longitude'] = df['longitude'].astype('float32')
+
+    df['marcket_count'] = df['marcket_count'].astype('Int64')
+    df['store_count'] = df['store_count'].astype('Int64')
+    df['subway_count'] = df['subway_count'].astype('Int64')
+    df['restaurant_count'] = df['restaurant_count'].astype('Int64')
+    df['cafe_count'] = df['cafe_count'].astype('Int64')
+    df['hospital_count'] = df['hospital_count'].astype('Int64')
+
+    df['nearest_marcket_distance'] = df['nearest_marcket_distance'].astype('Int64')
+    df['nearest_store_distance'] = df['nearest_store_distance'].astype('Int64')
+    df['nearest_subway_distance'] = df['nearest_subway_distance'].astype('Int64')
+    df['nearest_restaurant_distance'] = df['nearest_restaurant_distance'].astype('Int64')
+    df['nearest_cafe_distance'] = df['nearest_cafe_distance'].astype('Int64')
+    df['nearest_hospital_distance'] = df['nearest_hospital_distance'].astype('Int64')
+
+    df.to_parquet(filename, engine='pyarrow')
     
     # upload it to S3
     hook = S3Hook('s3_conn')
@@ -221,7 +246,7 @@ def alter_room_info(**context):
                         room_id, platform, room_type, service_type, title, description, floor, area, deposit, rent, maintenance_fee, latitude, longitude, address, 
                         property_link, registration_number, agency_name, agent_name, image_link
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """
                 cur.execute(insert_sql, (
@@ -298,8 +323,8 @@ dag = DAG(
 params = {
     "schema" : "mool8487",
     "table" : "zigbang_test",
-    'filename': '/opt/airflow/data/zigbang_add_room_info.csv',
-    'key': 'zigbang/zigbang_sampling.csv',
+    'filepath': '/opt/airflow/data/',
+    'key': 'zigbang/',
     'bucket_name': 'team-ariel-1-bucket'
 }
 
