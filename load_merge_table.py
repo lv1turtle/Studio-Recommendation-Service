@@ -1,8 +1,11 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
+from airflow.providers.mysql.transfers.s3_to_mysql import S3ToMySqlOperator
 from airflow.models import Variable
 from airflow import DAG
+
 from datetime import datetime
+from datetime import timedelta
 
 
 # Redshift 연결
@@ -14,11 +17,11 @@ def get_redshift_conn(autocommit=True):
 
 
 # S3의 다방 파일(.parquet)을 Redshift의 외부 테이블로 가져옴
-def load_dabang_data(**context):
+def load_dabang_data_to_external_from_s3(**context):
     cur = get_redshift_conn()
     schema = context["params"]["schema"]
     table = context["params"]["table"]
-    url = context["params"]["url"]
+    uri = context["params"]["uri"]
 
     try:
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
@@ -54,15 +57,15 @@ def load_dabang_data(**context):
                                 image_link varchar(255)
                                 )
                                 stored as parquet
-                                location '{url}';"""
+                                location '{uri}';"""
         cur.execute(external_table_query)
     except Exception as error:
         print(error)
         raise
 
 
-# 다방(외부 테이블)과 직방(적재된 상태)를 병합한 테이블을 Redshift에 적재
-def load_merge_table(**context):
+# 다방(외부 테이블)과 직방(적재된 상태)를 병합하고 중복을 제거한 테이블을 Redshift에 적재
+def load_merge_table_with_dabang_and_zigbang(**context):
     cur = get_redshift_conn()
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -119,32 +122,79 @@ def load_merge_table(**context):
         raise
 
 
+# 병합한 테이블(property)을 S3로 UNLOAD
+def unload_merge_table(**context):
+    cur = get_redshift_conn()
+    schema = context["params"]["schema"]
+    table = context["params"]["table"]
+    uri = context["params"]["uri"]
+    iam_role = context["params"]["iam_role"]
+
+    try:
+        cur.execute("BEGIN;")
+        unload_query = f"""UNLOAD ('SELECT * FROM {schema}.{table}')
+                            TO '{uri}'
+                            IAM_ROLE '{iam_role}'
+                            FORMAT AS PARQUET
+                            ALLOWOVERWRITE
+                            PARALLEL OFF;
+                            """
+        cur.execute(unload_query)
+        cur.execute("COMMIT;")
+    except Exception as error:
+        print(error)
+        cur.execute("ROLLBACK;")
+        raise
+    
+
 dag = DAG(
-    dag_id = 'load_merge_table',
+    dag_id = 'load_merge_table_to_redshift_and_rds',
     start_date = datetime(2024, 7, 1),
     schedule = '@once',
     catchup = False,
     default_args = {
-        'retries': 0,
-        #'retry_delay': timedelta(minutes=3),
+        'owner' : 'sangmin',
+        'retries' : 0,
+        # 'retry_delay': timedelta(minutes=1),
     }
 )
 
-load_dabang_data = PythonOperator(
-    task_id = 'load_dabang_data',
-    python_callable = load_dabang_data,
-    params = {'url' : Variable.get("dabang_s3_url"),
+load_dabang_data_to_external_from_s3 = PythonOperator(
+    task_id = 'load_dabang_data_to_external_from_s3',
+    python_callable = load_dabang_data_to_external_from_s3,
+    params = {'uri' : Variable.get("dabang_s3_uri"),
             'schema' : 'external_schema',
             'table' : 'dabang'},
     dag = dag
 )
 
-load_merge_table = PythonOperator(
-    task_id = 'load_merge_table',
-    python_callable = load_merge_table,
+load_merge_table_with_dabang_and_zigbang = PythonOperator(
+    task_id = 'load_merge_table_with_dabang_and_zigbang',
+    python_callable = load_merge_table_with_dabang_and_zigbang,
     params = {'schema' : 'raw_data',
             'table' : 'property'},
     dag = dag
 )
 
-load_dabang_data >> load_merge_table
+unload_merge_table = PythonOperator(
+    task_id = 'unload_merge_table',
+    python_callable = unload_merge_table,
+    params = {'uri' : Variable.get("unload_s3_uri"),
+            'iam_role' : Variable.get("redshift_iam_role"),
+            'schema' : 'raw_data',
+            'table' : 'property'},
+    dag = dag
+)
+
+# load_merge_table_to_rds = S3ToMySqlOperator(
+#     task_id = 'load_merge_table_to_rds',
+#     s3_source_key = f"{Variable.get('unload_s3_uri')}000.parquet",
+#     mysql_table = 'property',
+#     mysql_duplicate_key_handling = 'IGNORE',
+#     mysql_extra_options = None,
+#     aws_conn_id = 's3_conn',
+#     mysql_conn_id = 'rds_conn',
+#     dag = dag
+# )
+
+load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> unload_merge_table #>> load_merge_table_to_rds
