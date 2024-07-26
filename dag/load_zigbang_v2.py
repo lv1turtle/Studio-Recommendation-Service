@@ -18,11 +18,11 @@ def get_Redshift_connection(autocommit=True):
 
 
 def extract_room_ids(**context):
-    # geohashs = ["wydnp", "wydju", "wydjv", "wydjy", "wydjz", "wydjs", "wydjt", "wydjw", "wydjx", "wydjk", "wydjm", "wydjq", "wydjr", "wydjh", "wydjj", "wydjn", "wydjp", \
-    #             "wydhzx", "wydhzz", "wydhzw", "wydhzy", "wydq8", "wydq9", "wydqd", "wydqe", "wydqs", "wydq2", "wydq3", "wydq6", "wydq7", "wydqk", "wydq0", "wydq1", "wydq4", "wydq5", "wydqh", \
-    #             "wydmb", "wydmc", "wydmf", "wydmg", "wydmu", "wydmv", "wydmy",  "wydm8", "wydm9", "wydmd", "wydme", "wydms", "wydmt", "wydmw", "wydm2", "wydm3", "wydm6", "wydm7", \
-    #             "wydmk", "wydmm", "wydm0", "wydm1", "wydm4", "wydm5", "wydmh", "wydmj"]
-    geohashs = ["wydnp"]
+    geohashs = ["wydnp", "wydju", "wydjv", "wydjy", "wydjz", "wydjs", "wydjt", "wydjw", "wydjx", "wydjk", "wydjm", "wydjq", "wydjr", "wydjh", "wydjj", "wydjn", "wydjp", \
+                "wydhzx", "wydhzz", "wydhzw", "wydhzy", "wydq8", "wydq9", "wydqd", "wydqe", "wydqs", "wydq2", "wydq3", "wydq6", "wydq7", "wydqk", "wydq0", "wydq1", "wydq4", "wydq5", "wydqh", \
+                "wydmb", "wydmc", "wydmf", "wydmg", "wydmu", "wydmv", "wydmy",  "wydm8", "wydm9", "wydmd", "wydme", "wydms", "wydmt", "wydmw", "wydm2", "wydm3", "wydm6", "wydm7", \
+                "wydmk", "wydmm", "wydm0", "wydm1", "wydm4", "wydm5", "wydmh", "wydmj"]
+    # geohashs = ["wydnp"]
 
     logging.info("[ extract room id start ]")
 
@@ -34,7 +34,7 @@ def extract_room_ids(**context):
 
     logging.info(f"[ total id count : {len(ids)} ]\n")
 
-    return ids[:5]
+    return ids[:10]
 
 
 # Redshift에서 기존 ID 가져오기
@@ -178,8 +178,8 @@ dag = DAG(
 
 
 params = {
-    "schema" : "mool8487",
-    "table" : "zigbang_test"
+    "schema" : "rawdata",
+    "table" : "zigbang"
 }
 
 extract_room_ids = PythonOperator(
