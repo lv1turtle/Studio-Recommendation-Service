@@ -173,7 +173,7 @@ def extract_room_ids():
 
     print(f"total id count : {len(ids)}")
 
-    return ids[:10]
+    return ids[:5]
 
 
 # 직방 매물 데이터 수집
