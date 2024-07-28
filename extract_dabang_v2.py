@@ -4,7 +4,7 @@ import re
 import pandas as pd
 
 # API 키 모음
-vworld_api_key = "F5B25757-5CED-3188-BB82-B0A2522DCB6A"
+# vworld_api_key = "F5B25757-5CED-3188-BB82-B0A2522DCB6A"
 kakao_api_key = "KakaoAK f48c38a5cf26ec7a7bd7b54c20f2f994"
 # 다방 request url
 base_url = "https://www.dabangapp.com/api/v5/room-list/category/one-two/bbox?bbox=%7B%22sw%22%3A%7B%22lat%22%3A37.4401052%2C%22lng%22%3A126.6997919%7D%2C%22ne%22%3A%7B%22lat%22%3A37.6893849%2C%22lng%22%3A127.2484216%7D%7D&filters=%7B%22sellingTypeList%22%3A%5B%22MONTHLY_RENT%22%5D%2C%22depositRange%22%3A%7B%22min%22%3A0%2C%22max%22%3A999999%7D%2C%22priceRange%22%3A%7B%22min%22%3A0%2C%22max%22%3A999999%7D%2C%22isIncludeMaintenance%22%3Afalse%2C%22pyeongRange%22%3A%7B%22min%22%3A0%2C%22max%22%3A999999%7D%2C%22roomFloorList%22%3A%5B%22GROUND_FIRST%22%2C%22GROUND_SECOND_OVER%22%2C%22SEMI_BASEMENT%22%2C%22ROOFTOP%22%5D%2C%22roomTypeList%22%3A%5B%22ONE_ROOM%22%2C%22TWO_ROOM%22%5D%2C%22dealTypeList%22%3A%5B%22AGENT%22%2C%22DIRECT%22%5D%2C%22canParking%22%3Afalse%2C%22isShortLease%22%3Afalse%2C%22hasElevator%22%3Afalse%2C%22hasPano%22%3Afalse%2C%22isDivision%22%3Afalse%2C%22isDuplex%22%3Afalse%7D&page={page}&useMap=naver&zoom=11"
@@ -77,30 +77,30 @@ def extract_nearest_facilities_info(lng, lat, category, radius=500) -> dict:
     return {"count": count, "nearest_distance": nearest_distance}
 
 
-def get_address(lat, lng):
-    base_url = "http://api.vworld.kr/req/address"
-    params = {
-        "service": "address",
-        "request": "getaddress",
-        "version": "2.0",
-        "format": "json",
-        "crs": "epsg:4326",
-        "point": f"{lng},{lat}",
-        "type": "both",
-        "key": vworld_api_key,
-    }
+# def get_address(lat, lng):
+#     base_url = "http://api.vworld.kr/req/address"
+#     params = {
+#         "service": "address",
+#         "request": "getaddress",
+#         "version": "2.0",
+#         "format": "json",
+#         "crs": "epsg:4326",
+#         "point": f"{lng},{lat}",
+#         "type": "both",
+#         "key": vworld_api_key,
+#     }
 
-    response = requests.get(base_url, params=params)
+#     response = requests.get(base_url, params=params)
 
-    if response.status_code == 200:
-        data = response.json()
-        if data["response"]["status"] == "OK":
-            address = data["response"]["result"][0]["text"]
-            return address
-        else:
-            return "No address found"
-    else:
-        return f"Request failed with status code {response.status_code}"
+#     if response.status_code == 200:
+#         data = response.json()
+#         if data["response"]["status"] == "OK":
+#             address = data["response"]["result"][0]["text"]
+#             return address
+#         else:
+#             return "No address found"
+#     else:
+#         return f"Request failed with status code {response.status_code}"
 
 
 def fetch_rooms(base_url, page):
@@ -145,6 +145,13 @@ def process_rooms(room_list):
         cafe = extract_nearest_facilities_info(lng, lat, "카페", 987)
         hospital = extract_nearest_facilities_info(lng, lat, "병원", 946)
 
+        # 주소 받아오기
+        address_url = f"https://www.dabangapp.com/api/3/room/near?api_version=3.0.1&call_type=web&room_id={id}&version=1"
+        response = requests.get(address_url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            address = data.get("address")
+
         # 부동산 정보 받아오기
         registration_url = f"https://www.dabangapp.com/api/3/new-room/detail?api_version=3.0.1&call_type=web&room_id={id}&version=1"
         response = requests.get(registration_url, headers=headers)
@@ -153,7 +160,6 @@ def process_rooms(room_list):
             registration_name = data.get("agent").get("name")
             agent_name = data.get("agent").get("facename")
             registration_number = data.get("agent").get("reg_id")
-
         else:
             print(f"Request failed with status code {response.status_code}")
 
@@ -168,7 +174,7 @@ def process_rooms(room_list):
                 "deposit": int(deposit_num),
                 "rent": int(monthly_fee),
                 "maintenance_fee": int(manage_money),
-                "address": get_address(lat, lng),
+                "address": address,
                 "latitude": float(lat),
                 "longitude": float(lng),
                 "property_link": "https://www.dabangapp.com/room/" + room.get("id"),
@@ -226,10 +232,6 @@ def save_to_csv(data, filename):
                 "nearest_restaurant_distance",
                 "hospital_count",
                 "nearest_hospital_distance",
-                # "bank_count",
-                # "nearest_bank_distance",
-                # "pharmacy_count",
-                # "nearest_pharmacy_distance",
                 "img_link",
             ],
         )
@@ -256,8 +258,8 @@ def get_data_by_range(start, end):
             cnt += len(room_list)
         else:
             break
-    save_to_csv(data_for_csv, "dabang_sampling.csv")
-    # save_to_parquet(data_for_csv, "dabang_sampling2.parquet")
+    # save_to_csv(data_for_csv, "/opt/airflow/data/dabang_sampling.csv")
+    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang_sampling.parquet")
     print(f"총 개수: {cnt}")
 
 
@@ -280,8 +282,8 @@ def get_data_all():
         else:
             print("No more rooms found. Exiting.")
             break
-    # save_to_csv(data_for_csv, "dabang_monthly.csv")
-    save_to_parquet(data_for_csv, "dabang.parquet")
+    # save_to_csv(data_for_csv, "/opt/airflow/data/dabang.csv")
+    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang.parquet")
     print(f"총 개수: {cnt}")
 
 
@@ -294,9 +296,3 @@ def read_parquet_file(filename):
     print(df.describe())
 
     return df
-
-
-# get_data_by_range(1, 2)
-# Parquet 파일 읽기 및 확인
-# filename = "dabang_sampling2.parquet"
-# dataframe = read_parquet_file(filename)
