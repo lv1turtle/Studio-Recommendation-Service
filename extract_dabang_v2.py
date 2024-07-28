@@ -256,8 +256,8 @@ def get_data_by_range(start, end):
             cnt += len(room_list)
         else:
             break
-    save_to_csv(data_for_csv, "dabang_sampling.csv")
-    # save_to_parquet(data_for_csv, "dabang_sampling2.parquet")
+    #save_to_csv(data_for_csv, "/opt/airflow/data/dabang_sampling.csv")
+    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang_sampling.parquet")
     print(f"총 개수: {cnt}")
 
 
@@ -280,8 +280,8 @@ def get_data_all():
         else:
             print("No more rooms found. Exiting.")
             break
-    # save_to_csv(data_for_csv, "dabang_monthly.csv")
-    save_to_parquet(data_for_csv, "dabang.parquet")
+    # save_to_csv(data_for_csv, "/opt/airflow/data/dabang.csv")
+    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang.parquet")
     print(f"총 개수: {cnt}")
 
 
@@ -294,9 +294,3 @@ def read_parquet_file(filename):
     print(df.describe())
 
     return df
-
-
-# get_data_by_range(1, 2)
-# Parquet 파일 읽기 및 확인
-# filename = "dabang_sampling2.parquet"
-# dataframe = read_parquet_file(filename)

@@ -11,7 +11,7 @@ def fetch_data():
 
     # 작업속도 확인
     start_time = time.time()  # 시작 시간 기록
-    extract_dabang_v2.get_data_by_range(1, 6)
+    extract_dabang_v2.get_data_all()
     end_time = time.time()  # 종료 시간 기록
     execution_time = end_time - start_time  # 실행 시간 계산
     hours, rem = divmod(execution_time, 3600)
@@ -26,13 +26,16 @@ def upload_to_s3(filename: str, key: str, bucket_name: str) -> None:
                    bucket_name=bucket_name,
                    replace=True)
 
+def clear_data(filename: str) -> None:
+    import os
+    os.remove(filename)
 
 with DAG('dabang_upload_to_s3',
          schedule_interval='0 10 * * *',
          start_date=datetime(2024, 7, 1),
          catchup=False
          ) as dag:
-    
+
     fetch = PythonOperator(
         task_id='fetch_data',
         python_callable=fetch_data
@@ -40,8 +43,13 @@ with DAG('dabang_upload_to_s3',
     upload = PythonOperator(task_id='upload',
                             python_callable=upload_to_s3,
                             op_kwargs={
-                                'filename': '/opt/airflow/data/dabang_sampling.csv',
-                                'key': 'dabang/dabang_sampling_{{ ds }}.csv',
+                                'filename': '/opt/airflow/data/dabang.parquet',
+                                'key': 'dabang/dabang_{{ ds }}.parquet',
                                 'bucket_name': 'team-ariel-1-bucket'
                             })
-fetch >> upload
+    clear = PythonOperator(task_id='clear_data',
+                           python_callable=clear_data,
+                           op_kwargs={
+                                'filename': '/opt/airflow/data/dabang.parquet'
+                           })
+fetch >> upload >> clear
