@@ -188,10 +188,9 @@ def extract_room_data():
         else:
             room = extract_room_info(id, delay=0)
 
-        if room:
+        if room and room["room_type"] in ['원룸', '분리형원룸', '오픈형원룸', '투룸', '복층형원룸']:
             data.append(room)
 
-    # 데이터 리턴
     return {"extract_room_ids":room_ids,"room_data":data}
 
 
@@ -266,7 +265,7 @@ def extend_facilities_info(new_info_data):
     return new_info_data
 
 
-# 추가로 수집한 매물 데이터 csv에 적재
+# 추가로 수집한 매물 데이터 타입 변환 후 parquet에 적재
 def room_data_save_to_parquet(data_to_add, filename):
     df = pd.DataFrame(data_to_add)
 
