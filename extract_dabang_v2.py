@@ -258,7 +258,7 @@ def get_data_by_range(start, end):
             cnt += len(room_list)
         else:
             break
-    # save_to_csv(data_for_csv, "/opt/airflow/data/dabang_sampling.csv")
+            
     save_to_parquet(data_for_csv, "/opt/airflow/data/dabang_sampling.parquet")
     print(f"총 개수: {cnt}")
 
