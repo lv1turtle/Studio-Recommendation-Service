@@ -35,7 +35,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id = 'download_agent_data',
+    dag_id = 'crawling_agent_data',
     start_date = datetime(2024, 7, 1),
     catchup = False,
     schedule_interval = '@once',

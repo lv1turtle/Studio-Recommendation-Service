@@ -3,7 +3,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-import extract_zigbang_v3
+import dags.extract_zigbang as extract_zigbang_v3
 
 
 
@@ -56,7 +56,7 @@ def load_to_s3(**context):
                     key=key,
                     bucket_name=bucket_name,
                     replace=True)
-    
+
 
 def clear_data(filename: str) -> None:
     import os
