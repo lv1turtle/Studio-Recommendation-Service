@@ -31,6 +31,7 @@ def clear_data(**context):
     os.remove(paths["zip_filepath"])
     os.remove(paths["extract_dir"])
 
+
 default_args = {
     'retries' : 0,
 }
@@ -39,7 +40,7 @@ with DAG(
     dag_id = 'crawling_agent_data',
     start_date = datetime(2024, 7, 1),
     catchup = False,
-    schedule_interval = '@weekly',
+    schedule_interval = '@daily',
     default_args = default_args,
     tags = ['S3']
     ):
@@ -59,5 +60,9 @@ with DAG(
                     "bucket_name":"team-ariel-1-bucket"
                 }
     )
+    clear_data = PythonOperator(
+        task_id='clear_data',
+        python_callable=clear_data
+    )
 
-    download_data >> load_csv_to_s3
+    download_data >> load_csv_to_s3 >> clear_data
