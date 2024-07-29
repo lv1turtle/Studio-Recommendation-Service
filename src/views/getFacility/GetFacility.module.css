@@ -1,0 +1,47 @@
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.question {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.facilities {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.facility {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.facility input {
+  width: 20px;
+  height: 20px;
+}
+
+.facility span {
+  font-size: 18px;
+}
+
+.link {
+  display: block;
+  margin-top: 20px;
+  text-align: center;
+  font-size: 18px;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}

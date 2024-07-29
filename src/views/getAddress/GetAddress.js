@@ -33,21 +33,5 @@ const getAddress = () => {
     </>
   );
 };
-  // return (
-  //   <>
-  //     <h1 className={style.title}>살고 싶은 동네를 입력해주세요 !</h1>
-  //     <form action="">
-  //       <input type="text"/>
-  //       <input type="submit" onSubmit={(e) => onSubmit("name", e)} />
-  //     </form>
-  //     <div className="tip">
-  //         <p>tip</p>
-  //         <p>아래와 같은 조합으로 검색하시면 됩니다.</p>
-  //         <p>oo역, oo동, oo구</p>
-  //       </div>
-  //     <Link to="/address/cost">이동</Link>
-  //   </>
-  // )
-// 
-// }
+
 export default getAddress
