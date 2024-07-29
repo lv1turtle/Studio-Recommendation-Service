@@ -7,11 +7,11 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from datetime import datetime
 
 
-
+# agent 데이터를 다운로드
 def download_data(download_path):
     agent_data_to_s3.download_agent_data(download_path)
 
-
+# 다운로드 받은 데이터를 S3에 적재
 def load_csv_to_s3(download_path, key, bucket_name):
     paths = agent_data_to_s3.load_s3(download_path)
 
@@ -23,6 +23,7 @@ def load_csv_to_s3(download_path, key, bucket_name):
     
     return paths
     
+# 다운로드 받은 파일을 삭제
 def clear_data(**context):
     import os
     paths = context["task_instance"].xcom_pull(key="return_value", task_ids='load_csv_to_s3')
@@ -38,7 +39,7 @@ with DAG(
     dag_id = 'crawling_agent_data',
     start_date = datetime(2024, 7, 1),
     catchup = False,
-    schedule_interval = '@once',
+    schedule_interval = '@weekly',
     default_args = default_args,
     tags = ['S3']
     ):

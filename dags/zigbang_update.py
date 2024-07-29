@@ -3,10 +3,10 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-import dags.extract_zigbang as extract_zigbang_v3
+import extract_zigbang_v3
 
 
-
+# 직방 매물 데이터를 수집해서 airflow xcom을 이용해 task간 데이터 공유
 def fetch_room_data(**context):
     data = extract_zigbang_v3.extract_room_data()
 
@@ -14,11 +14,12 @@ def fetch_room_data(**context):
     ti.xcom_push(key='extract_room_ids', value=data["extract_room_ids"])
     ti.xcom_push(key='room_data', value=data["room_data"])
 
-
+# redshift 테이블 내의 직방 데이터 갱신(insert, update, delete)
 def update_to_redshift(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
     
+    # xcom으로 공유한 직방 매물 데이터를 받아옴
     ti = context['ti']
     room_data = ti.xcom_pull(task_ids='fetch_room_data', key='room_data')
     new_ids = ti.xcom_pull(task_ids='fetch_room_data', key='extract_room_ids')
@@ -27,14 +28,17 @@ def update_to_redshift(**context):
     ids = extract_zigbang_v3.check_room_ids(new_ids, existing_ids)
     ids_to_delete = ids["ids_to_delete"]
     ids_to_add = ids["ids_to_add"]
+    # 추가해야 할 매물 데이터를 xcom을 통해 task간 공유 (insert)
     ti.xcom_push(key='ids_to_add', value=ids_to_add)
 
+    # 사라진 매물들을 테이블에서 제거 (delete)
     extract_zigbang_v3.delete_deleted_room_info(ids_to_delete, schema, table)
 
+    # 추가된 데이터가 아닌 기존 데이터들은 상태 정보만 갱신 (update)
     maintained_data = extract_zigbang_v3.get_maintained_data(room_data, ids_to_add)
     extract_zigbang_v3.alter_room_info(maintained_data, schema, table)
 
-
+# 추가해야 할 매물 데이터들을 S3에 적재 (agent_data와 결합하기 위함)
 def load_to_s3(**context):
     filename = context["params"]["filename"]
     key = context["params"]["key"]
@@ -65,7 +69,7 @@ def clear_data(filename: str) -> None:
 
 
 with DAG('zigbang_update',
-         schedule_interval='0 1 * * *',
+         schedule_interval='0 10 * * *',
         start_date=datetime(2024, 7, 1),
         catchup=False
         ) as dag:

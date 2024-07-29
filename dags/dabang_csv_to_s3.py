@@ -31,7 +31,7 @@ def clear_data(filename: str) -> None:
     os.remove(filename)
 
 with DAG('dabang_upload_to_s3',
-         schedule_interval='0 10 * * *',
+         schedule_interval='0 12 * * *',
          start_date=datetime(2024, 7, 1),
          catchup=False
          ) as dag:
