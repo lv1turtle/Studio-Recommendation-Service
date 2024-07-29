@@ -13,7 +13,7 @@ import zipfile
 import os
 
 
-
+# vworld 부동산 중개업자(agent) 데이터를 받아오는 Task
 def download_agent_data(download_path):
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
@@ -31,12 +31,15 @@ def download_agent_data(download_path):
     end_date = datetime.now().strftime('%Y-%m-%d')
     vworld_url = f"https://www.vworld.kr/dtmk/dtmk_ntads_s002.do?searchBrmCode=&datIde=&searchFrm=&dsId=11&pageSize=10&pageUnit=10&listPageIndex=1&gidsCd=&searchKeyword=&searchOrganization=&dataSetSeq=11&svcCde=NA&searchTagList=&pageIndex=1&gidmCd=&sortType=00&datPageIndex=1&datPageSize=10&startDate={start_date}&endDate={end_date}&dsNm={search_input}"
 
+    # 4444 포트에 있는 chromedriver를 호출 
+    # ( seleniarm/standalone-chromium을 docker container에서 띄움 )
     remote_webdriver = 'remote_chromedriver'
     with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
         driver.get(vworld_url)
         driver.implicitly_wait(3)
         time.sleep(10)
         
+        # download_button을 불러와 이를 실행하여 download
         download_button = driver.find_elements(By.CLASS_NAME, 'bt.ico.down.bg.primary')[0]
         actions = ActionChains(driver).move_to_element(download_button)
         actions.perform()
@@ -44,7 +47,7 @@ def download_agent_data(download_path):
         download_button.click()
         time.sleep(30)
 
-
+# download한 파일을 압축 해제하여 s3에 적재하기 위해 경로를 전달
 def load_s3(download_path):
     for filename in os.listdir(download_path):
         if filename.endswith('.zip'):
