@@ -1,27 +1,29 @@
 import style from "./GetAddress.module.css"
-import {postRegister} from "../../apis/Users";
-import { Link } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
+import {useRecoilValue, useSetRecoilState} from "recoil";
+import {addressAtom} from "../../stores/addressAtom";
+import {useState} from "react";
 
-const getAddress = () => {
-  const onSubmit = (data, event) => {
-    event.preventDefault();
-    postRegister(data)
-      .then((r) => {
-        alert("회원 가입이 되었습니다");
-      })
-      .catch((r) => {
-        alert("아이디나 비밀번호를 확인해 주세요.");
-        console.log("Register Post Error : " + r);
-      });
-  };
+const GetAddress = () => {
+  const setAddress = useSetRecoilState(addressAtom);
+  const address = useRecoilValue(addressAtom);
+  const [inputValue, setValue] = useState("");
+  const navigate = useNavigate();
+
+  const clickEvent = (e) => {
+    e.preventDefault();
+    setAddress({...address, address: inputValue});
+    console.log(address);
+    navigate("/address/cost");
+  }
 
   return (
     <>
       <h1 className={style.title}>살고 싶은 동네를 입력해 주세요.</h1>
-      <form className={style["form-container"]} onSubmit={(e) => onSubmit("name", e)}>
+      <form className={style["form-container"]} action="">
         <div className={style["search-bar"]}>
-          <input type="text" placeholder="군자역, 서초동..." />
-          <input type="submit" value="O" />
+          <input type="text" placeholder="군자역, 서초동..." onChange={e=> setValue(e.target.value)}/>
+          <input type="submit" onClick={e => clickEvent(e)} value="O" />
         </div>
       </form>
       <div className={style.tip}>
@@ -29,9 +31,8 @@ const getAddress = () => {
         <p>아래와 같은 조합으로 검색하시면 됩니다.</p>
         <p>oo역, oo동, oo구</p>
       </div>
-      <Link to="/address/cost">이동</Link>
     </>
   );
 };
 
-export default getAddress
+export default GetAddress

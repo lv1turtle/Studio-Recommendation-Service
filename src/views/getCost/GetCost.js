@@ -2,14 +2,30 @@ import style from "./GetCost.module.css";
 import { Link } from "react-router-dom";
 import ReactSlider from "react-slider";
 import React, { useState } from "react";
+import {useRecoilValue, useSetRecoilState} from "recoil";
+import {addressAtom} from "../../stores/addressAtom";
 
 const GetCost = () => {
   const [deposit, setDeposit] = useState([0, 15000]);
   const [rent, setRent] = useState([0, 600]);
+  
+  const setAddress = useSetRecoilState(addressAtom);
+  const address = useRecoilValue(addressAtom);
+  const [test,setTest] = useState("");
 
+  const clickEvent = (e) => {
+    e.preventDefault();
+    setAddress({...address, test: test});
+    console.log(address);
+    // navigate("/address/cost");
+  }
   return (
     <>
       <h1 className={style.title}>예상 보증금, 월세를 지정해주세요.</h1>
+      <form action="">
+        <input type="text" onChange={e=> setTest(e.target.value)}/>
+        <input type="submit" onClick={clickEvent} value="O"/>
+      </form>
       <div className={style["cost-container"]}>
         <div className={style["slider-container"]}>
           <div className={style["slider-label"]}>
