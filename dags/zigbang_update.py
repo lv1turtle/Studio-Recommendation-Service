@@ -1,9 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import extract_zigbang_v3
+
 
 
 def fetch_room_data(**context):
