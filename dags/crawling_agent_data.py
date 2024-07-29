@@ -40,7 +40,7 @@ with DAG(
     dag_id = 'crawling_agent_data',
     start_date = datetime(2024, 7, 1),
     catchup = False,
-    schedule_interval = '@daily',
+    schedule_interval = '0 9 * * *',
     default_args = default_args,
     tags = ['S3']
     ):
