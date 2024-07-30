@@ -4,6 +4,7 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import time
 from datetime import datetime
 from datetime import timedelta
+import pandas as pd
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -47,8 +48,17 @@ def download_agent_data(download_path):
         download_button.click()
         time.sleep(30)
 
+# 파일의 columns 구성을 erd에 맞게 변경 후 덮어쓰기
+def transform_columns(csv_file):
+    df = pd.read_csv(csv_file, encoding="EUC-KR")
+
+    df = df[["등록번호", "brkr_nm_encpt", "중개업자종별코드", "직위구분코드", "자격증번호"]]
+    df.rename(columns={"등록번호":"registration_number", "brkr_nm_encpt":"agent_name", "중개업자종별코드":"agent_code", "직위구분코드":"position_code", "자격증번호":"certificate_number"}, inplace=True)
+
+    df.to_csv(csv_file, encoding="utf-8", index=False, errors="replace")
+
 # download한 파일을 압축 해제하여 s3에 적재하기 위해 경로를 전달
-def load_s3(download_path):
+def get_csv_file_path(download_path):
     for filename in os.listdir(download_path):
         if filename.endswith('.zip'):
             zip_filepath = os.path.join(download_path, filename)
