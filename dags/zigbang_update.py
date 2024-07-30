@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
 import extract_zigbang_v3
 
 
@@ -67,7 +68,9 @@ def clear_data(filename: str) -> None:
     import os
     os.remove(filename)
 
-
+# 가장 최근 파일명
+yesterday = datetime.now() - timedelta(days=1)
+zigbang_s3_url = f"zigbang/zigbang_2024-07-29{yesterday.strftime('%Y-%m-%d')}.parquet"
 
 with DAG('zigbang_update',
         schedule_interval='0 2 * * *',
@@ -103,5 +106,17 @@ with DAG('zigbang_update',
                     'filename': '/opt/airflow/data/zigbang.parquet'
                 }
     )
+    load_zigbang_data_to_redshift_from_s3 = S3ToRedshiftOperator(
+        task_id = "load_zigbang_data_to_redshift_from_s3",
+        s3_bucket = "team-ariel-1-bucket",	# 데이터를 가져오는 S3 bucket 이름
+        s3_key = zigbang_s3_url,			# 데이터를 가져오는 위치
+        schema = "raw_data",		# 데이터를 적재할 schema
+        table = "zigbang",		# 데이터를 적재할 table
+        copy_options=['parquet', 'IGNOREHEADER 1'],	# S3에서 가져올 file 확장자
+        redshift_conn_id = "redshift_dev_db",	# Connections에서 저장한 redshift Conn id
+        aws_conn_id = "s3_conn",    	# Connections에서 저장한 S3 Conn id
+        method = "APPEND"
+    )
 
-fetch_room_data >> update_to_redshift >> load_to_s3 >> clear_data
+
+fetch_room_data >> update_to_redshift >> load_to_s3 >> clear_data >> load_zigbang_data_to_redshift_from_s3
