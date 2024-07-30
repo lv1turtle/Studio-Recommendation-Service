@@ -26,10 +26,11 @@ def load_csv_to_s3(download_path, key, bucket_name):
 # 다운로드 받은 파일을 삭제
 def clear_data(**context):
     import os
+    import shutil
     paths = context["task_instance"].xcom_pull(key="return_value", task_ids='load_csv_to_s3')
 
     os.remove(paths["zip_filepath"])
-    os.remove(paths["extract_dir"])
+    shutil.rmtree(paths["extract_dir"])
 
 
 default_args = {
@@ -40,7 +41,7 @@ with DAG(
     dag_id = 'crawling_agent_data',
     start_date = datetime(2024, 7, 1),
     catchup = False,
-    schedule_interval = '0 9 * * *',
+    schedule_interval = '0 1 * * *',
     default_args = default_args,
     tags = ['S3']
     ):

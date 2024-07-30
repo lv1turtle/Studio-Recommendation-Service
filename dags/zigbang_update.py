@@ -69,7 +69,7 @@ def clear_data(filename: str) -> None:
 
 
 with DAG('zigbang_update',
-         schedule_interval='0 10 * * *',
+        schedule_interval='0 2 * * *',
         start_date=datetime(2024, 7, 1),
         catchup=False
         ) as dag:
