@@ -108,6 +108,12 @@ class SampleDataFilteringView(APIView):
                 type=openapi.TYPE_INTEGER,
             ),
             openapi.Parameter(
+                "include_maintenance_fee",
+                openapi.IN_QUERY,
+                description="관리비 포함/미포함",
+                type=openapi.TYPE_BOOLEAN,
+            ),
+            openapi.Parameter(
                 "min_rent",
                 openapi.IN_QUERY,
                 description="최소 월세 입력",
@@ -139,6 +145,7 @@ class SampleDataFilteringView(APIView):
         address = request.GET.get("address")
         min_deposit = request.GET.get("min_deposit")
         max_deposit = request.GET.get("max_deposit")
+        include_maintenance_fee = request.GET.get("include_maintenance_fee") == "true"
         min_rent = request.GET.get("min_rent")
         max_rent = request.GET.get("max_rent")
         facilities = request.GET.get("facilities")
@@ -152,18 +159,22 @@ class SampleDataFilteringView(APIView):
             "음식점": "restaurant_count",
             "병원": "hospital_count",
         }
+
         if not address:
             return Response(
                 {"error": "address parameter is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         try:
-            # 기본 필터링 조건
-            filter_conditions = {"address__icontains": address}
+            # 기본 필터링 조건 적용
+            queryset = SampleData.objects.filter(address__icontains=address)
+
             # 보증금 최소값 필터링 조건 추가
             if min_deposit is not None:
                 try:
-                    filter_conditions["deposit__gte"] = int(min_deposit)
+                    min_deposit_value = int(min_deposit)
+                    queryset = queryset.filter(deposit__gte=min_deposit_value)
                 except ValueError:
                     return Response(
                         {"error": "min_deposit must be an integer"},
@@ -173,16 +184,27 @@ class SampleDataFilteringView(APIView):
             # 보증금 최대값 필터링 조건 추가
             if max_deposit is not None:
                 try:
-                    filter_conditions["deposit__lte"] = int(max_deposit)
+                    max_deposit_value = int(max_deposit)
+                    queryset = queryset.filter(deposit__lte=max_deposit_value)
                 except ValueError:
                     return Response(
                         {"error": "max_deposit must be an integer"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
             # 월세 최소값 필터링 조건 추가
             if min_rent is not None:
                 try:
-                    filter_conditions["rent__gte"] = int(min_rent)
+                    min_rent_value = int(min_rent)
+                    if include_maintenance_fee:
+                        queryset = queryset.annotate(
+                            rent_plus_maintenance=ExpressionWrapper(
+                                F("rent") + F("maintenance_fee"),
+                                output_field=IntegerField(),
+                            )
+                        ).filter(rent_plus_maintenance__gte=min_rent_value)
+                    else:
+                        queryset = queryset.filter(rent__gte=min_rent_value)
                 except ValueError:
                     return Response(
                         {"error": "min_rent must be an integer"},
@@ -192,40 +214,41 @@ class SampleDataFilteringView(APIView):
             # 월세 최대값 필터링 조건 추가
             if max_rent is not None:
                 try:
-                    filter_conditions["rent__lte"] = int(max_rent)
+                    max_rent_value = int(max_rent)
+                    if include_maintenance_fee:
+                        queryset = queryset.annotate(
+                            rent_plus_maintenance=ExpressionWrapper(
+                                F("rent") + F("maintenance_fee"),
+                                output_field=IntegerField(),
+                            )
+                        ).filter(rent_plus_maintenance__lte=max_rent_value)
+                    else:
+                        queryset = queryset.filter(rent__lte=max_rent_value)
                 except ValueError:
                     return Response(
                         {"error": "max_rent must be an integer"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
+
             # 편의시설 필터링 조건 추가
             if facilities is not None:
                 facilities = facilities.replace("'", "").split(",")
                 for facility in facilities:
                     field_name = facility_info.get(facility)
                     if field_name:
-                        filter_conditions[f"{field_name}__gte"] = 1
+                        queryset = queryset.filter(**{f"{field_name}__gte": 1})
 
-            print(f"Filtered option: {filter_conditions}")
-            # 필터링된 데이터 가져오기
+            # 층 옵션 필터링 조건 추가
             if floor_options:
-                print(floor_options)
                 if floor_options == "옥탑":
-                    sample_data = SampleData.objects.filter(
-                        **filter_conditions
-                    ).exclude(floor__icontains="반지")
+                    queryset = queryset.exclude(floor__icontains="반지")
                 elif floor_options == "반지하":
-                    sample_data = SampleData.objects.filter(
-                        **filter_conditions
-                    ).exclude(floor__icontains="옥탑")
-                else:
-                    sample_data = SampleData.objects.filter(**filter_conditions)
+                    queryset = queryset.exclude(floor__icontains="옥탑")
             else:
-                sample_data = SampleData.objects.filter(**filter_conditions).exclude(
-                    floor__in=["옥탑", "반지"]
-                )
+                queryset = queryset.exclude(floor__in=["옥탑", "반지"])
 
-            sample_data = sample_data.annotate(
+            # 편의시설 점수 계산
+            queryset = queryset.annotate(
                 market_score=Case(
                     When(market_count__gt=0, then=Value(3)),
                     default=Value(0),
@@ -285,7 +308,7 @@ class SampleDataFilteringView(APIView):
             )
 
             # 편의시설 점수 합계 계산
-            sample_data = sample_data.annotate(
+            queryset = queryset.annotate(
                 total_facility_score=F("market_score")
                 + F("restaurant_score")
                 + F("store_distance_score")
@@ -295,7 +318,7 @@ class SampleDataFilteringView(APIView):
             )
 
             # 월 지출비 계산
-            sample_data = sample_data.annotate(
+            queryset = queryset.annotate(
                 monthly_expense=ExpressionWrapper(
                     (F("deposit") * 1 / 20 * 1 / 12) + F("rent") + F("maintenance_fee"),
                     output_field=FloatField(),
@@ -303,7 +326,7 @@ class SampleDataFilteringView(APIView):
             )
 
             # 월 지출비 순위 계산
-            sample_data = sample_data.annotate(
+            queryset = queryset.annotate(
                 monthly_expense_rank=Window(
                     expression=RowNumber(),
                     order_by=F("monthly_expense").asc(),
@@ -311,39 +334,23 @@ class SampleDataFilteringView(APIView):
             )
 
             # 편의시설 점수 순위 계산
-            sample_data = sample_data.annotate(
+            queryset = queryset.annotate(
                 facility_rank=Window(
                     expression=RowNumber(),
                     order_by=F("total_facility_score").desc(),
                 )
             )
+
             # 최종 점수 계산
-            sample_data = sample_data.annotate(
+            queryset = queryset.annotate(
                 final_score=ExpressionWrapper(
                     3 * F("monthly_expense_rank") + 2 * F("facility_rank"),
                     output_field=FloatField(),
                 )
             ).order_by("final_score")
 
-            # # 최종 점수 계산
-            # sample_data = sample_data.annotate(
-            #     final_score=ExpressionWrapper(
-            #         2
-            #         * (
-            #             F("market_score")
-            #             + F("restaurant_score")
-            #             + F("store_distance_score")
-            #             + F("cafe_distance_score")
-            #             + F("subway_score")
-            #             + F("hospital_score")
-            #         )
-            #         + 3 * F("monthly_expense"),
-            #         output_field=FloatField(),
-            #     )
-            # ).order_by("-final_score")
-
-            if sample_data.exists():
-                serializer = SampleDataSerializer(sample_data, many=True)
+            if queryset.exists():
+                serializer = SampleDataSerializer(queryset, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(
