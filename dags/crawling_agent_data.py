@@ -100,7 +100,7 @@ with DAG(
         schema = "raw_data",		# 데이터를 적재할 schema
         table = "agency_details",		# 데이터를 적재할 table
         copy_options=['csv', 'IGNOREHEADER 1'],	# S3에서 가져올 file 확장자
-        redshift_conn_id = "redshift_conn",	# Connections에서 저장한 redshift Conn id
+        redshift_conn_id = "redshift_dev_db",	# Connections에서 저장한 redshift Conn id
         aws_conn_id = "s3_conn",    	# Connections에서 저장한 S3 Conn id
         method = "REPLACE"
     )
