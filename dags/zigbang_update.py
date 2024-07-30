@@ -83,7 +83,7 @@ with DAG('zigbang_update',
         task_id='update_to_redshift',
         python_callable=update_to_redshift,
         params={
-                'schema': 'rawdata',
+                'schema': 'raw_data',
                 'table': 'zigbang'
             }
     )
