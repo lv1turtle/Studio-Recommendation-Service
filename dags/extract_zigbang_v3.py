@@ -176,9 +176,7 @@ def extract_room_ids():
 
 
 # 직방 매물 데이터 수집
-def extract_room_data():
-    room_ids = extract_room_ids()
-
+def extract_room_data(room_ids):
     data = []
     for i, id in enumerate(room_ids):
         print(i, id)
@@ -190,7 +188,7 @@ def extract_room_data():
         if room and room["room_type"] in ['원룸', '분리형원룸', '오픈형원룸', '투룸', '복층형원룸']:
             data.append(room)
 
-    return {"extract_room_ids":room_ids,"room_data":data}
+    return data
 
 
 def get_Redshift_connection(autocommit=True):
@@ -264,9 +262,9 @@ def extend_facilities_info(new_info_data):
     return new_info_data
 
 
-# 추가로 수집한 매물 데이터 타입 변환 후 parquet에 적재
-def room_data_save_to_parquet(data_to_add, filename):
-    df = pd.DataFrame(data_to_add)
+# 수집한 매물 데이터 csv에 적재
+def room_data_save_to_parquet(data, filename):
+    df = pd.DataFrame(data)
 
     df['area'] = df['area'].astype('float32')
     df['deposit'] = df['deposit'].astype('Int64')

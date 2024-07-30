@@ -8,11 +8,12 @@ import extract_zigbang_v3
 
 # 직방 매물 데이터를 수집해서 airflow xcom을 이용해 task간 데이터 공유
 def fetch_room_data(**context):
-    data = extract_zigbang_v3.extract_room_data()
+    room_ids = extract_zigbang_v3.extract_room_ids()
+    data = extract_zigbang_v3.extract_room_data(room_ids)
 
     ti = context['ti']
-    ti.xcom_push(key='extract_room_ids', value=data["extract_room_ids"])
-    ti.xcom_push(key='room_data', value=data["room_data"])
+    ti.xcom_push(key='extract_room_ids', value=room_ids)
+    ti.xcom_push(key='room_data', value=data)
 
 # redshift 테이블 내의 직방 데이터 갱신(insert, update, delete)
 def update_to_redshift(**context):
