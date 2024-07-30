@@ -1,79 +1,103 @@
 import style from "./GetCost.module.css";
-import { Link } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import ReactSlider from "react-slider";
 import React, { useState } from "react";
 import {useRecoilValue, useSetRecoilState} from "recoil";
 import {addressAtom} from "../../stores/addressAtom";
+import Checkbox from "../../common/checkbox/Checkbox";
+import Header from "../../common/header/Header";
+import Footer from "../../common/footer/Footer";
 
 const GetCost = () => {
-  const [deposit, setDeposit] = useState([0, 15000]);
-  const [rent, setRent] = useState([0, 600]);
-  
   const setAddress = useSetRecoilState(addressAtom);
   const address = useRecoilValue(addressAtom);
-  const [test,setTest] = useState("");
+  const [minDeposit, setMinDeposit] = useState(0);
+  const [maxDeposit, setMaxDeposit] = useState(20000);
+  const [minRent, setMinRent] = useState(0);
+  const [maxRent, setMaxRent] = useState(150);
+  const [checkFee, setCheckFee] = useState(false);
+  const navigate = useNavigate();
 
-  const clickEvent = (e) => {
-    e.preventDefault();
-    setAddress({...address, test: test});
-    console.log(address);
-    // navigate("/address/cost");
+  const changeDeposit = (value) => {
+    setMinDeposit(value[0]);
+    setMaxDeposit(value[1]);
   }
+  const changeRent = (value) => {
+    setMinRent(value[0]);
+    setMaxRent(value[1]);
+  }
+  const clickEvent = () => {
+    setAddress({
+      ...address,
+      min_deposit: minDeposit,
+      max_deposit: maxDeposit,
+      min_rent: minRent,
+      max_rent: maxRent,
+      include_maintenance_fee : checkFee,
+    });
+    navigate("/address/cost/facility");
+  }
+
   return (
     <>
-      <h1 className={style.title}>예상 보증금, 월세를 지정해주세요.</h1>
-      <form action="">
-        <input type="text" onChange={e=> setTest(e.target.value)}/>
-        <input type="submit" onClick={clickEvent} value="O"/>
-      </form>
-      <div className={style["cost-container"]}>
-        <div className={style["slider-container"]}>
-          <div className={style["slider-label"]}>
-            <span>가격</span>
-            <label>
-              <input type="checkbox" />
-              관리비 포함
-            </label>
+      <div className={style["container"]}>
+        <Header />
+        <main className={style["main"]}>
+          <div className={style["intro"]}>
+            <h1>원하는 보증금, 월세 범위를 설정해주세요!</h1>
+            <div style={{ textAlign: "left", margin: "10px" }}>단위: 만원</div>
+            <div className={style["slider-container"]}>
+              <div className={style["slider-label"]}>
+                <span className={style["cost-text"]}>보증금</span>
+                <div className={style["slider-label"]}>
+                  <div className={style["slider"]}>
+                    <ReactSlider
+                      thumbClassName={style["thumb"]}
+                      trackClassName={style["track"]}
+                      defaultValue={[0, 20000]}
+                      min={0}
+                      max={20000}
+                      step={100}
+                      renderThumb={(props, state) => <div {...props}>{state.valueNow}</div>}
+                      onChange={changeDeposit}
+                    />
+                  </div>
+                  <div className={style["value-container"]}>
+                    <span>최소</span>
+                    <span>최대</span>
+                  </div>
+                </div>
+              </div>
+              <div className={style["slider-label"]}>
+                <div className={style["rent-header"]}>
+                  <span className={style["cost-text"]}>월세</span>
+                  <Checkbox checked={checkFee} onChange={setCheckFee}>
+                    관리비 포함
+                  </Checkbox>
+                </div>
+                <div className={style["slider"]}>
+                  <ReactSlider
+                    thumbClassName={style["thumb"]}
+                    trackClassName={style["track"]}
+                    defaultValue={[0, 150]}
+                    min={0}
+                    max={150}
+                    step={5}
+                    renderThumb={(props, state) => <div {...props}>{state.valueNow}</div>}
+                    onChange={changeRent}
+                  />
+                </div>
+                <div className={style["value-container"]}>
+                  <span>최소</span>
+                  <span>최대</span>
+                </div>
+              </div>
+            </div>
+            <button className={style["move-button"]} onClick={clickEvent}>이동</button>
           </div>
-          <div className={style["slider-label"]}>
-            <span>보증금(전세금)</span>
-            <span>무제한</span>
-          </div>
-          <ReactSlider
-            className={style.slider}
-            thumbClassName="thumb"
-            trackClassName="track"
-            defaultValue={[0, 15000]}
-            min={0}
-            max={15000}
-            step={100}
-            onChange={(value) => setDeposit(value)}
-          />
-          <div className={style["slider-label"]}>
-            <span>최소</span>
-            <span>{deposit[1]}만원</span>
-          </div>
-          <div className={style["slider-label"]}>
-            <span>월세</span>
-            <span>무제한</span>
-          </div>
-          <ReactSlider
-            className={style.slider}
-            thumbClassName="thumb"
-            trackClassName="track"
-            defaultValue={[0, 600]}
-            min={0}
-            max={600}
-            step={10}
-            onChange={(value) => setRent(value)}
-          />
-          <div className={style["slider-label"]}>
-            <span>최소</span>
-            <span>{rent[1]}만원</span>
-          </div>
-        </div>
+        </main>
+        <Footer />
       </div>
-      <Link to="/address/cost/facility">이동</Link>
     </>
   );
 };

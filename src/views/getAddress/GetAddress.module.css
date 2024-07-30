@@ -1,3 +1,28 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  text-align: center;
+  max-width: 700px;
+  width: 100%;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+
 .title {
   text-align: center;
   margin-top: 20px;
@@ -36,11 +61,12 @@
 }
 
 .tip {
+  border: 1px dashed #d3d3d3;
   text-align: left;
-  margin-top: 20px;
   font-size: 14px;
   max-width: 600px;
   margin: 0 auto;
+  padding: 15px;
 }
 
 .tip p {

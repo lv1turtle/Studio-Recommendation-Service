@@ -1,52 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, {useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
 import style from "./GetFloor.module.css";
-
-const floorOptions = ["옥탑방", "반지하"];
+import Checkbox from "../../common/checkbox/Checkbox";
+import CheckboxGroup from "../../common/checkbox/CheckboxGroup";
+import {useRecoilValue, useSetRecoilState} from "recoil";
+import {addressAtom} from "../../stores/addressAtom";
+import Header from "../../common/header/Header";
+import Footer from "../../common/footer/Footer";
 
 const GetFloor = () => {
-  const location = useLocation();
-  const [selectedOptions, setSelectedOptions] = useState([]);
-  const [existingParams, setExistingParams] = useState('');
+  const [floor, setFloor] = useState([]);
+  const setAddress = useSetRecoilState(addressAtom);
+  const address = useRecoilValue(addressAtom);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    setExistingParams(searchParams.toString());
-  }, [location.search]);
-
-  const toggleOption = (option) => {
-    setSelectedOptions(prevSelected =>
-      prevSelected.includes(option)
-        ? prevSelected.filter(opt => opt !== option)
-        : [...prevSelected, option]
-    );
-  };
-
-  const getNextUrl = () => {
-    const selectedParams = new URLSearchParams(existingParams);
-    selectedParams.set('selectedOptions', selectedOptions.join(','));
-    return `/info?${selectedParams.toString()}`;
-  };
-
+  const clickEvent = () => {
+    setAddress({
+      ...address,
+      floor_options : floor,
+    });
+    console.log(address)
+    navigate("/info");
+  }
   return (
     <>
-      <h1 className={style.title}>옥탑, 반지하 입력 페이지 입니다.</h1>
-      <section className={style.section}>
-        <p className={style.question}>옥탑방이나 반지하 정보도 받으시겠어요?</p>
-        <div className={style.options}>
-          {floorOptions.map(option => (
-            <div key={option} className={style.option} onClick={() => toggleOption(option)}>
-              <input 
-                type="checkbox" 
-                checked={selectedOptions.includes(option)} 
-                readOnly 
-              />
-              <span>{option}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-      <Link to={getNextUrl()} className={style.link}>이동</Link>
+      <div className={style.container}>
+        <Header />
+        <main className={style.main}>
+          <div className={style.card}>
+            <h1 className={style.title}>옥탑, 반지하 입력 페이지 입니다.</h1>
+            <section className={style.section}>
+              <p className={style.question}>옥탑방이나 반지하 정보도 받으시겠어요?</p>
+              <div className={style.options}>
+                <CheckboxGroup
+                  label={"옥탑, 반지하 정보"}
+                  values={floor}
+                  onChange={setFloor}
+                >
+                  <Checkbox value="옥탑">옥탑방</Checkbox>
+                  <Checkbox value="반지하">반지하</Checkbox>
+                </CheckboxGroup>
+              </div>
+            </section>
+            <button onClick={clickEvent} className={style["move-button"]}>이동</button>
+          </div>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 };
