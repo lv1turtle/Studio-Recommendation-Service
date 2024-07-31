@@ -44,9 +44,8 @@ jobs:
           # script 중간에 실패하는 순간 뒤에 있는 script는 실행하지 않음
           script_stop: true
           script: |
-            sudo su -
             cd /home/ubuntu/.ssh
-            ssh -i team-ariel-1-private-key.pem ubuntu@${{ secrets.AWS_AIRFLOW_EC2_IP }} 'bash deploy.sh'
+            ssh -i team-ariel-1-private-key.pem ${{ secrets.AWS_AIRFLOW_HOST_USERNAME }}@${{ secrets.AWS_AIRFLOW_EC2_IP }} 'bash deploy.sh'
 
       # AWS CLI로 보안그룹에 등록했던 Github Actions의 IP를 제거
       - name: Remove Github Actions IP From Security Group
