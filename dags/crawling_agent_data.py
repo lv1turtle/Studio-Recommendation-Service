@@ -4,9 +4,10 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.mysql.hooks.mysql import MySqlHook
 
 from datetime import datetime, timedelta
-
+import os
 
 # agent 데이터를 다운로드
 def download_data(download_path):
@@ -43,6 +44,36 @@ def clear_data(**context):
 
     os.remove(paths["zip_filepath"])
     shutil.rmtree(paths["extract_dir"])
+
+
+# s3에 적재한 데이터를 redshift에 적재
+def load_agent_data_to_rds(**context):
+    schema = context["params"]["schema"]
+    table = context["params"]["table"]
+    key = context["params"]["key"]
+
+    s3_hook = S3Hook(aws_conn_id= 's3_conn')
+    file = s3_hook.download_file(key=key)
+    try:
+        mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
+        conn = mysql.get_conn()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM {schema}.{table}")
+        cursor.execute(
+            f"""
+            LOAD DATA LOCAL INFILE '{file}'
+            IGNORE
+            INTO TABLE {schema}.{table}
+            FIELDS TERMINATED BY ','
+            LINES TERMINATED BY '\n'
+            IGNORE 1 LINES
+            """
+        )
+
+        cursor.close()
+        conn.commit()
+    finally:
+        os.remove(file)
 
 
 default_args = {
@@ -105,5 +136,16 @@ with DAG(
         method = "REPLACE"
     )
 
+    load_agent_data_to_rds = PythonOperator(
+        task_id='load_agent_data_to_rds',
+        python_callable=load_agent_data_to_rds,
+        params={
+                    "schema": "production",
+                    "table": "agency_details",
+                    "key":agent_s3_url
+                }
+    )
 
-    download_data >> transform >> load_csv_to_s3 >>  clear_data >> load_agent_data_to_redshift_from_s3
+
+
+    download_data >> transform >> load_csv_to_s3 >>  clear_data >> load_agent_data_to_redshift_from_s3 >> load_agent_data_to_rds
