@@ -4,6 +4,10 @@ from airflow.providers.mysql.transfers.s3_to_mysql import S3ToMySqlOperator
 from airflow.models import Variable
 from airflow import DAG
 
+from airflow.providers.amazon.aws.hooks.s3 import S3Hook
+from airflow.providers.mysql.hooks.mysql import MySqlHook
+import os
+
 from datetime import datetime
 from datetime import timedelta
 
@@ -105,7 +109,7 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     FROM external_schema.dabang
                                     )
                                 )
-                                SELECT room_id, platform, service_type, title, floor, area, deposit, rent,
+                                SELECT room_id, platform, service_type, REPLACE(title, ',', '.') AS title, floor, area, deposit, rent,
                                     maintenance_fee, address, latitude, longitude, registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
@@ -135,10 +139,12 @@ def unload_merge_table(**context):
         unload_query = f"""UNLOAD ('SELECT * FROM {schema}.{table}')
                             TO '{uri}'
                             IAM_ROLE '{iam_role}'
-                            FORMAT AS PARQUET
+                            CSV
                             ALLOWOVERWRITE
-                            PARALLEL OFF;
-                            """
+                            PARALLEL OFF
+                            DELIMITER ','
+                            HEADER;
+                        """
         cur.execute(unload_query)
         cur.execute("COMMIT;")
     except Exception as error:
@@ -147,15 +153,43 @@ def unload_merge_table(**context):
         raise
     
 
+# UNLOAD된 파일을 RDS(mysql)에 적재
+def load_merge_table_to_rds(**context):
+    table = context["params"]["table"]
+    uri = context["params"]["uri"]
+
+    s3_hook = S3Hook(aws_conn_id= 's3_conn')
+    file = s3_hook.download_file(key=f"{uri}000")
+    try:
+        mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
+        conn = mysql.get_conn()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM production.property")
+        cursor.execute(
+            f"""
+            LOAD DATA LOCAL INFILE '{file}'
+            IGNORE
+            INTO TABLE {table}
+            FIELDS TERMINATED BY ','
+            LINES TERMINATED BY '\n'
+            IGNORE 1 LINES
+            """
+        )
+        cursor.close()
+        conn.commit()
+    finally:
+        os.remove(file)
+
+
 dag = DAG(
     dag_id = 'load_merge_table_to_redshift_and_rds',
     start_date = datetime(2024, 7, 1),
-    schedule = '@once',
+    schedule_interval = '0 4 * * *',
     catchup = False,
     default_args = {
         'owner' : 'sangmin',
-        'retries' : 0,
-        # 'retry_delay': timedelta(minutes=1),
+        'retries' : 2,
+        'retry_delay': timedelta(minutes=1),
     }
 )
 
@@ -186,15 +220,12 @@ unload_merge_table = PythonOperator(
     dag = dag
 )
 
-# load_merge_table_to_rds = S3ToMySqlOperator(
-#     task_id = 'load_merge_table_to_rds',
-#     s3_source_key = f"{Variable.get('unload_s3_uri')}000.parquet",
-#     mysql_table = 'property',
-#     mysql_duplicate_key_handling = 'IGNORE',
-#     mysql_extra_options = None,
-#     aws_conn_id = 's3_conn',
-#     mysql_conn_id = 'rds_conn',
-#     dag = dag
-# )
+load_merge_table_to_rds = PythonOperator(
+    task_id = 'load_merge_table_to_rds',
+    python_callable = load_merge_table_to_rds,
+    params = {'uri' : Variable.get("unload_s3_uri"),
+            'table' : 'property'},
+    dag = dag
+)
 
-load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> unload_merge_table #>> load_merge_table_to_rds
+load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds
