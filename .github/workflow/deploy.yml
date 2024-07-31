@@ -1,0 +1,54 @@
+name: Deploy
+
+# PR 혹은 Push가 되면 trigger
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Github Actions의 IP를 보안 그룹에 허용하기 위해
+      # Github Actions의 IP를 출력하여 다음 step에서 접근할 수 있게함
+      - name: Get Github Actions IP
+        id: ip
+        uses: haythem/public-ip@v1.2
+
+      # AWS IAM 계정을 등록 (EC2FullAccess 필수)
+      # AWS CLI 사용을 위함
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      # AWS CLI로 위에서 얻은 Github Actions의 IP를 EC2 보안그룹 인바운드 규칙에 등록
+      - name: Add Github Actions IP to Security group
+        run: |
+          aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      # appleboy/ssh-action를 사용해 SSH로 EC2에 직접 접근 및 명령 수행 (CD 작업 -> script)
+      # SSH로 Bastion host에 접속
+      # Baston host에서 Private EC2로 접근
+      - name: SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_BASTION_HOST_IP }}
+          username: ${{ secrets.AWS_BASTION_HOST_USERNAME }}
+          key: ${{ secrets.AWS_SECRET_KEY }}
+          # script 중간에 실패하는 순간 뒤에 있는 script는 실행하지 않음
+          script_stop: true
+          script: |
+            sudo su -
+            cd /home/ubuntu/.ssh
+            ssh -i team-ariel-1-private-key.pem ubuntu@${{ secrets.AWS_AIRFLOW_EC2_IP }} 'bash deploy.sh'
+
+      # AWS CLI로 보안그룹에 등록했던 Github Actions의 IP를 제거
+      - name: Remove Github Actions IP From Security Group
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
