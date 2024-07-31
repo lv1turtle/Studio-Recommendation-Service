@@ -22,7 +22,7 @@ with DAG('zigbang_copy_to_redshift',
         task_id='copy_s3_to_redshift',
         python_callable=copy_s3_to_redshift,
         op_kwargs={
-                    'schema': 'rawdata',
+                    'schema': 'raw_data',
                     'table': 'zigbang',
                     's3_url': Variable.get("s3_zigbang_url"),
                     'iam_s3_role': Variable.get("iam_s3_role")
