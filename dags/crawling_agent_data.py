@@ -9,6 +9,8 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from datetime import datetime, timedelta
 import os
 
+agent_s3_url = None
+
 # agent 데이터를 다운로드
 def download_data(download_path):
     agent_data_to_s3.download_agent_data(download_path)
@@ -17,7 +19,10 @@ def download_data(download_path):
 # agent 데이터 columns 변환
 def transform(download_path):
     paths = agent_data_to_s3.get_csv_file_path(download_path)
-    
+
+    global agent_s3_url # 추후 redshift에 적재를 위해 파일명을 전역변수로 지정
+    agent_s3_url = "agent/" + paths["csv_filename"]
+
     agent_data_to_s3.transform_columns(paths["csv_filepath"])
 
     return paths
@@ -80,9 +85,6 @@ default_args = {
     'retries' : 0,
 }
 
-# 가장 최근 파일명
-yesterday = datetime.now() - timedelta(days=1)
-agent_s3_url = f"agent/AL_D172_00_{yesterday.strftime('%Y%m%d')}.csv"
 
 with DAG(
     dag_id = 'crawling_agent_data',
