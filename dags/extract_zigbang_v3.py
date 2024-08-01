@@ -266,6 +266,8 @@ def extend_facilities_info(new_info_data):
 def room_data_save_to_parquet(data, filename):
     df = pd.DataFrame(data)
 
+    df['room_id'] = df['room_id'].astype('str')
+
     df['area'] = df['area'].astype('float32')
     df['deposit'] = df['deposit'].astype('Int64')
     df['rent'] = df['rent'].astype('Int64')
@@ -273,14 +275,14 @@ def room_data_save_to_parquet(data, filename):
     df['latitude'] = df['latitude'].astype('float32')
     df['longitude'] = df['longitude'].astype('float32')
 
-    df['marcket_count'] = df['marcket_count'].astype('Int64')
+    df['market_count'] = df['market_count'].astype('Int64')
     df['store_count'] = df['store_count'].astype('Int64')
     df['subway_count'] = df['subway_count'].astype('Int64')
     df['restaurant_count'] = df['restaurant_count'].astype('Int64')
     df['cafe_count'] = df['cafe_count'].astype('Int64')
     df['hospital_count'] = df['hospital_count'].astype('Int64')
 
-    df['nearest_marcket_distance'] = df['nearest_marcket_distance'].astype('Int64')
+    df['nearest_market_distance'] = df['nearest_market_distance'].astype('Int64')
     df['nearest_store_distance'] = df['nearest_store_distance'].astype('Int64')
     df['nearest_subway_distance'] = df['nearest_subway_distance'].astype('Int64')
     df['nearest_restaurant_distance'] = df['nearest_restaurant_distance'].astype('Int64')
