@@ -10,7 +10,7 @@ category_group = {
                     "대형마트":{
                         "code":"MT1",
                         "radius":1712,
-                        "eng":"marcket"
+                        "eng":"market"
                     },
                     "편의점":{
                         "code":"CS2",
