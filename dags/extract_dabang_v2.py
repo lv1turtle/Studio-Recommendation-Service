@@ -222,6 +222,7 @@ def save_to_csv(data, filename):
                 "agent_name",
                 "subway_count",
                 "nearest_subway_distance",
+
                 "store_count",
                 "nearest_store_distance",
                 "cafe_count",
@@ -266,6 +267,7 @@ def save_to_parquet(data, filename):
     )
     df["nearest_cafe_distance"] = df["nearest_cafe_distance"].astype("Int64")
     df["nearest_hospital_distance"] = df["nearest_hospital_distance"].astype("Int64")
+
     df.to_parquet(filename, engine="pyarrow", index=False)
     print(f"Data has been written to {filename}")
 
