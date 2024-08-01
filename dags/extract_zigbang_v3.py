@@ -351,13 +351,13 @@ def alter_room_info(maintained_data, schema, table):
             join_sql = f"""
                 CREATE TABLE {schema}.join_tmp AS
                 WITH o AS (
-                    SELECT room_id AS o_room_id, marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, nearest_subway_distance, restaurant_count, 
+                    SELECT room_id AS o_room_id, market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, nearest_subway_distance, restaurant_count, 
                             nearest_restaurant_distance, cafe_count, nearest_cafe_distance, hospital_count, nearest_hospital_distance
                     FROM {schema}.{table}
                 )
                 SELECT room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
                         latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
-                        marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, 
+                        market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                         nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                         nearest_cafe_distance, hospital_count, nearest_hospital_distance, 
                         title, description, image_link
@@ -371,14 +371,14 @@ def alter_room_info(maintained_data, schema, table):
                 INSERT INTO {schema}.{table} (
                     room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
                     latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
-                    marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, 
+                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                     nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link
                 )
                 SELECT 
                     room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
                     latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
-                    marcket_count, nearest_marcket_distance, store_count, nearest_store_distance, subway_count, 
+                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                     nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link
                 FROM {schema}.join_tmp;
