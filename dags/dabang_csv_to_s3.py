@@ -9,7 +9,7 @@ import time
 
 def fetch_data():
     import extract_dabang_v2
-    extract_dabang_v2.get_data_by_range(1,2)
+    extract_dabang_v2.get_data_all()
 
 
 def upload_to_s3(filename: str, key: str, bucket_name: str) -> None:
