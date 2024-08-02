@@ -61,7 +61,7 @@ def load_agent_data_to_rds(**context):
         mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
         conn = mysql.get_conn()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM {schema}.{table}")
+        cursor.execute(f"DELETE FROM {schema}.{table}")
         cursor.execute(
             f"""
             LOAD DATA LOCAL INFILE '{file}'
