@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListAPIView
-from .models import SampleData
+from .models import SampleData, SampleAgentData
 from .serializers import SampleDataSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -17,6 +17,9 @@ from django.db.models import (
     IntegerField,
     FloatField,
     Window,
+    Subquery,
+    OuterRef,
+    BooleanField,
 )
 
 
@@ -348,6 +351,25 @@ class SampleDataFilteringView(APIView):
                     output_field=FloatField(),
                 )
             ).order_by("final_score")
+
+            # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
+            queryset = queryset.annotate(
+                easy_safe=Case(
+                    When(
+                        Subquery(
+                            SampleAgentData.objects.filter(
+                                registration_number=OuterRef('registration_number'),
+                                agent_name=OuterRef('agent_name'),
+                                agent_code__in=[2, 3],
+                                certificate_number__isnull=False
+                            ).values('id')[:1]    # 만족하는 레코드가 존재하는지 확인하기 위해
+                        ).exists(),
+                        then=Value(True)
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField()
+                )
+            )
 
             if queryset.exists():
                 serializer = SampleDataSerializer(queryset, many=True)
