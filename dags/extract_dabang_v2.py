@@ -191,7 +191,7 @@ def process_rooms(room_list):
                 "agency_name": registration_name,
                 "agent_name": agent_name,
                 "subway_count": subway.get("count"),
-                "nearest_subway_dsitance": subway.get("nearest_distance"),
+                "nearest_subway_distance": subway.get("nearest_distance"),
                 "store_count": store.get("count"),
                 "nearest_store_distance": store.get("nearest_distance"),
                 "cafe_count": cafe.get("count"),
@@ -275,7 +275,7 @@ def save_to_parquet(data, filename):
     df["cafe_count"] = pd.to_numeric(df["cafe_count"], errors='coerce').astype(pd.Int64Dtype())
     df["hospital_count"] = pd.to_numeric(df["hospital_count"], errors='coerce').astype(pd.Int64Dtype())
 
-    df["nearest_market_distance"] = pd.to_numeric(df["nearest_market_distance"], errors='coerce').astype(pd.Int64Dtype())
+    df["nearest_subway_distance"] = pd.to_numeric(df["nearest_subway_distance"], errors='coerce').astype(pd.Int64Dtype())
     df["nearest_store_distance"] = pd.to_numeric(df["nearest_store_distance"], errors='coerce').astype(pd.Int64Dtype())
     df["nearest_cafe_distance"] = pd.to_numeric(df["nearest_cafe_distance"], errors='coerce').astype(pd.Int64Dtype())
     df["nearest_market_distance"] = pd.to_numeric(df["nearest_market_distance"], errors='coerce').astype(pd.Int64Dtype())
@@ -298,7 +298,7 @@ def get_data_by_range(start, end):
         else:
             break
     # save_to_csv(data_for_csv, "/opt/airflow/data/dabang_sampling.csv")
-    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang_sampling.parquet")
+    save_to_parquet(data_for_csv, "/opt/airflow/data/dabang.parquet")
     # print(f"총 개수: {cnt}")
 
 
