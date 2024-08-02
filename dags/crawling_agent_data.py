@@ -97,7 +97,7 @@ with DAG(
         task_id='download_data',
         python_callable=download_data,
         op_kwargs={
-            "download_path": "/opt/airflow/data/"
+            "download_path": "/opt/airflow/data/agent/"
         }
     )
 
