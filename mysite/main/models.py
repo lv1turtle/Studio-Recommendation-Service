@@ -40,3 +40,14 @@ class SampleData(models.Model):
 
     def __str__(self):
         return f"방 제목: {self.title} 주소: {self.address}"
+
+
+class SampleAgentData(models.Model):
+    registration_number = models.CharField(max_length=100)
+    agent_name = models.CharField(max_length=100)
+    agent_code = models.IntegerField()
+    position_code = models.IntegerField()
+    certificate_number = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return f"부동산 등록번호: {self.registration_number} 중개사 이름: {self.agent_name}"
