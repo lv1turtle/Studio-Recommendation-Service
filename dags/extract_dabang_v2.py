@@ -64,15 +64,15 @@ def extract_nearest_facilities_info(lng, lat, category, radius=500) -> dict:
         "x": lng,
         "y": lat,
         "radius": radius,
-        "category_group_code": category_group_code.get(category, ''),
+        "category_group_code": category_group_code.get(category, ""),
     }
 
     response = requests.get(url, params=params, headers=headers)
-    
+
     if response.status_code != 200:
         print(f"Error: Received status code {response.status_code}")
         return {"count": 0, "nearest_distance": None}
-    
+
     data = response.json()
 
     print(data)
@@ -231,7 +231,6 @@ def save_to_csv(data, filename):
                 "agent_name",
                 "subway_count",
                 "nearest_subway_distance",
-
                 "store_count",
                 "nearest_store_distance",
                 "cafe_count",
@@ -261,26 +260,43 @@ def save_to_parquet(data, filename):
     df["latitude"] = df["latitude"].astype("float32")
     df["longitude"] = df["longitude"].astype("float32")
 
-    # df["market_count"] = df["market_count"].astype("Int64")
-    # df["store_count"] = df["store_count"].astype("Int64")
-    # df["subway_count"] = df["subway_count"].astype("Int64")
-    # df["restaurant_count"] = df["restaurant_count"].astype("Int64")
-    # df["cafe_count"] = df["cafe_count"].astype("Int64")
-    # df["hospital_count"] = df["hospital_count"].astype("Int64")
+    df["market_count"] = pd.to_numeric(df["market_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["store_count"] = pd.to_numeric(df["store_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["subway_count"] = pd.to_numeric(df["subway_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["restaurant_count"] = pd.to_numeric(
+        df["restaurant_count"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["cafe_count"] = pd.to_numeric(df["cafe_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["hospital_count"] = pd.to_numeric(df["hospital_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
 
-    df["market_count"] = pd.to_numeric(df["market_count"], errors='coerce').astype(pd.Int64Dtype())
-    df["store_count"] = pd.to_numeric(df["store_count"], errors='coerce').astype(pd.Int64Dtype())
-    df["subway_count"] = pd.to_numeric(df["subway_count"], errors='coerce').astype(pd.Int64Dtype())
-    df["restaurant_count"] = pd.to_numeric(df["restaurant_count"], errors='coerce').astype(pd.Int64Dtype())
-    df["cafe_count"] = pd.to_numeric(df["cafe_count"], errors='coerce').astype(pd.Int64Dtype())
-    df["hospital_count"] = pd.to_numeric(df["hospital_count"], errors='coerce').astype(pd.Int64Dtype())
-
-    df["nearest_subway_distance"] = pd.to_numeric(df["nearest_subway_distance"], errors='coerce').astype(pd.Int64Dtype())
-    df["nearest_store_distance"] = pd.to_numeric(df["nearest_store_distance"], errors='coerce').astype(pd.Int64Dtype())
-    df["nearest_cafe_distance"] = pd.to_numeric(df["nearest_cafe_distance"], errors='coerce').astype(pd.Int64Dtype())
-    df["nearest_market_distance"] = pd.to_numeric(df["nearest_market_distance"], errors='coerce').astype(pd.Int64Dtype())
-    df["nearest_restaurant_distance"] = pd.to_numeric(df["nearest_restaurant_distance"], errors='coerce').astype(pd.Int64Dtype())
-    df["nearest_hospital_distance"] = pd.to_numeric(df["nearest_hospital_distance"], errors='coerce').astype(pd.Int64Dtype())
+    df["nearest_subway_distance"] = pd.to_numeric(
+        df["nearest_subway_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["nearest_store_distance"] = pd.to_numeric(
+        df["nearest_store_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["nearest_cafe_distance"] = pd.to_numeric(
+        df["nearest_cafe_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["nearest_market_distance"] = pd.to_numeric(
+        df["nearest_market_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["nearest_restaurant_distance"] = pd.to_numeric(
+        df["nearest_restaurant_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
+    df["nearest_hospital_distance"] = pd.to_numeric(
+        df["nearest_hospital_distance"], errors="coerce"
+    ).astype(pd.Int64Dtype())
 
     df.to_parquet(filename, engine="pyarrow", index=False)
     print(f"Data has been written to {filename}")
