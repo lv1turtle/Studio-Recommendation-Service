@@ -12,9 +12,32 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 import zipfile
 import os
+import shutil
+
+# 디렉토리 내 모든 파일 삭제
+def clear_directory(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
 
 
-# vworld 부동산 중개업자(agent) 데이터를 받아오는 Task
+# 다운로드 폴더 초기화
+def set_download_directory(download_path):
+    if not os.path.exists(download_path):
+        os.makedirs(download_path)
+    elif os.listdir(download_path):
+        clear_directory(download_path)
+
+print(f"Finished setting up the download directory")    
+
+
+# vworld 부동산 중개업자(agent) 데이터 다운로드
 def download_agent_data(download_path):
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
@@ -73,11 +96,16 @@ def get_csv_file_path(download_path):
 
             break
 
+    print(f"csv_filename : {csv_filename}")
+    print(f"csv_filepath : {csv_filepath}")
+    print(f"zip_filepath : {zip_filepath}")
+    print(f"extract_dir : {extract_dir}")
+
     paths = {
-        "csv_filename":csv_filename,
-        "csv_filepath":csv_filepath,
-        "zip_filepath":zip_filepath,
-        "extract_dir":extract_dir
+        "csv_filename":csv_filename, # csv 파일명
+        "csv_filepath":csv_filepath, # csv 파일 경로
+        "zip_filepath":zip_filepath, # zip 파일 경로
+        "extract_dir":extract_dir    # 압축 해제한 폴더 경로
     }
 
     return paths
