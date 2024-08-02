@@ -261,13 +261,6 @@ def save_to_parquet(data, filename):
     df["latitude"] = df["latitude"].astype("float32")
     df["longitude"] = df["longitude"].astype("float32")
 
-    # df["market_count"] = df["market_count"].astype("Int64")
-    # df["store_count"] = df["store_count"].astype("Int64")
-    # df["subway_count"] = df["subway_count"].astype("Int64")
-    # df["restaurant_count"] = df["restaurant_count"].astype("Int64")
-    # df["cafe_count"] = df["cafe_count"].astype("Int64")
-    # df["hospital_count"] = df["hospital_count"].astype("Int64")
-
     df["market_count"] = pd.to_numeric(df["market_count"], errors='coerce').astype(pd.Int64Dtype())
     df["store_count"] = pd.to_numeric(df["store_count"], errors='coerce').astype(pd.Int64Dtype())
     df["subway_count"] = pd.to_numeric(df["subway_count"], errors='coerce').astype(pd.Int64Dtype())
