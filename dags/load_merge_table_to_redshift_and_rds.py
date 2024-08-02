@@ -1,6 +1,6 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
-from airflow.providers.mysql.transfers.s3_to_mysql import S3ToMySqlOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from airflow.models import Variable
 from airflow import DAG
 
@@ -228,4 +228,14 @@ load_merge_table_to_rds = PythonOperator(
     dag = dag
 )
 
-load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds
+# create_transformed_and_analytics_tables DAG를 Trigger하기 위한 Task
+trigger_create_transformed_and_analytics_tables = TriggerDagRunOperator(
+    task_id="trigger_create_transformed_and_analytics_tables",
+    trigger_dag_id="create_transformed_and_analytics_tables",
+    execution_date="{{ ds }}",
+    reset_dag_run=True,
+    wait_for_completion=True
+)
+
+load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> trigger_create_transformed_and_analytics_tables
+load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds
