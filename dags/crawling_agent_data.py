@@ -9,8 +9,10 @@ from datetime import datetime
 import os
 
 
+
 # agent 데이터를 다운로드
 def download_data(download_path):
+    agent_data_to_s3.set_download_directory(download_path)
     agent_data_to_s3.download_agent_data(download_path)
 
 
@@ -50,10 +52,11 @@ def clear_data(**context):
 def load_agent_data_to_rds(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
-    key = context["params"]["key"]
-
+    key = context["ti"].xcom_pull(task_ids='transform')['s3_url']
+    bucket_name = context["params"]["bucket_name"]
+    
     s3_hook = S3Hook(aws_conn_id= 's3_conn')
-    file = s3_hook.download_file(key=key)
+    file = s3_hook.download_file(key=key, bucket_name=bucket_name)
     try:
         mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
         conn = mysql.get_conn()
@@ -102,7 +105,7 @@ with DAG(
         task_id='transform',
         python_callable=transform,
         op_kwargs={
-            "download_path": "/opt/airflow/data/"
+            "download_path": "/opt/airflow/data/agent/"
         }
     )
 
@@ -137,7 +140,7 @@ with DAG(
         params={
             "schema": "production",
             "table": "agency_details",
-            "key": "{{ task_instance.xcom_pull(task_ids='transform')['s3_url'] }}"
+            "bucket_name": "team-ariel-1-bucket"
         }
     )
 
