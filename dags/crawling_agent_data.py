@@ -17,11 +17,11 @@ def download_data(download_path):
 # agent 데이터 columns 변환
 def transform(download_path):
     paths = agent_data_to_s3.get_csv_file_path(download_path)
+    paths["s3_url"] = "agent/" + paths["csv_filename"]
 
-    agent_s3_url = "agent/" + paths["csv_filename"]
     agent_data_to_s3.transform_columns(paths["csv_filepath"])
 
-    return {"csv_filepath": paths["csv_filepath"], "s3_url": agent_s3_url}
+    return paths
 
 
 # 다운로드 받은 데이터를 S3에 적재
