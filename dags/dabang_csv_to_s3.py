@@ -9,7 +9,7 @@ import time
 
 def fetch_data():
     import extract_dabang_v2
-    extract_dabang_v2.get_data_all()
+    extract_dabang_v2.get_data_by_range(1,2)
 
 
 def upload_to_s3(filename: str, key: str, bucket_name: str) -> None:
@@ -36,8 +36,8 @@ with DAG(
         task_id="save_upload",
         python_callable=upload_to_s3,
         op_kwargs={
-            filename": "/opt/airflow/data/dabang.parquet",
-            "key": "dabang/save/dabang_{{ ds }}.parquet",
+            "filename": "/opt/airflow/data/dabang.parquet",
+            "key": "dabang/save/{{ ds }}/dabang_{{ ds }}.parquet",
             "bucket_name": "team-ariel-1-bucket",
         },
     )
@@ -46,7 +46,7 @@ with DAG(
         python_callable=upload_to_s3,
         op_kwargs={
             "filename": "/opt/airflow/data/dabang.parquet",
-            "key": "dabang/overwrite/dabang_{{ ds }}.parquet",
+            "key": "dabang/overwrite/dabang.parquet",
             "bucket_name": "team-ariel-1-bucket",
         },
     )
