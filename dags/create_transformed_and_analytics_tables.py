@@ -174,8 +174,8 @@ def analytics_property_floor_count(**context):
         raise
 
 
-# analytics.property_floor_count 테이블 생성
-def analytics_agency_certificate(**context):
+# analytics.agency_certificate_count 테이블 생성
+def analytics_agency_certificate_count(**context):
     cur = get_redshift_conn()
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -196,6 +196,32 @@ def analytics_agency_certificate(**context):
                             LEFT JOIN raw_data.agency_details AS a
                             ON p.registration_number = a.registration_number AND p.agent_name = a.agent_name
                             GROUP BY certificate_status
+                        );"""
+        cur.execute(analytics_query)
+        cur.execute("COMMIT;")
+    except Exception as error:
+        print(error)
+        cur.execute("ROLLBACK;")
+        raise
+
+
+# analytics.agency_not_certificate 테이블 생성
+def analytics_agency_not_certificate(**context):
+    cur = get_redshift_conn()
+    schema = context["params"]["schema"]
+    table = context["params"]["table"]
+
+    try:
+        cur.execute("BEGIN;")
+        cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
+        analytics_query = f"""
+                        CREATE TABLE {schema}.{table} AS (
+                            SELECT p.agency_name, p.agent_name, COUNT(*) AS count
+                            FROM transformed.property AS p
+                            LEFT JOIN raw_data.agency_details AS a
+                            ON p.registration_number = a.registration_number AND p.agent_name = a.agent_name
+                            WHERE a.certificate_number = '' OR a.agent_code NOT IN (2, 3)
+                            GROUP BY 1, 2
                         );"""
         cur.execute(analytics_query)
         cur.execute("COMMIT;")
@@ -257,12 +283,20 @@ analytics_property_floor_count = PythonOperator(
     dag = dag
 )
 
-analytics_agency_certificate = PythonOperator(
-    task_id = 'analytics_agency_certificate',
-    python_callable = analytics_agency_certificate,
+analytics_agency_certificate_count = PythonOperator(
+    task_id = 'analytics_agency_certificate_count',
+    python_callable = analytics_agency_certificate_count,
     params = {'schema' : 'analytics',
-            'table' : 'agency_certificate'},
+            'table' : 'agency_certificate_count'},
     dag = dag
 )
 
-transform_property >> [analytics_property_position_and_fee, analytics_property_having_all_facility, analytics_property_agency_count, analytics_property_floor_count, analytics_agency_certificate]
+analytics_agency_not_certificate = PythonOperator(
+    task_id = 'analytics_agency_not_certificate',
+    python_callable = analytics_agency_not_certificate,
+    params = {'schema' : 'analytics',
+            'table' : 'agency_not_certificate'},
+    dag = dag
+)
+
+transform_property >> [analytics_property_position_and_fee, analytics_property_having_all_facility, analytics_property_agency_count, analytics_property_floor_count, analytics_agency_certificate_count, analytics_agency_not_certificate]
