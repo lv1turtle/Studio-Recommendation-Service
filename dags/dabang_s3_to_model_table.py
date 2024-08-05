@@ -80,16 +80,13 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG(
+with DAG(
     "s3_parquet_compare",
-    default_args=default_args,
-    description="Compare two parquet files in S3 and save missing data to Redshift",
     schedule_interval=timedelta(days=1),
     start_date=datetime(2023, 8, 1),
     catchup=False,
-)
-
-compare_and_save_task = PythonOperator(
+) as dag:
+    compare_and_save_task = PythonOperator(
     task_id="compare_and_save_task",
     python_callable=compare_and_save,
     provide_context=True,
