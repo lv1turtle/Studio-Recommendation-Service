@@ -122,6 +122,8 @@ def extract_room_info(id, delay=2):
                 room_data["title"] = item_data["title"]
                 room_data["description"] = item_data["description"]
                 room_data["image_link"] = item_data["imageThumbnail"] + "?w=400&h=300&q=70&a=1"
+                room_data["update_at"] = item_data["updatedAt"]
+
 
                 return room_data
             else:
@@ -301,6 +303,39 @@ def delete_deleted_room_info(ids_to_delete, schema, table):
             print("ROLLBACK")
             cursor.execute("ROLLBACK;")
             raise
+
+
+# 삭제된(판매된) 매물 load 테이블에 insert
+def insert_deleted_room_info(ids_to_delete, schema, table, load_schema, load_table):
+    cursor = get_Redshift_connection()
+
+    if ids_to_delete:
+        try:
+            cursor.execute("BEGIN;")
+            insert_sql = f"""
+                    INSERT INTO {load_schema}.{load_table} (
+                    room_id, area, floor, deposit, rent, maintenance_fee, address, 
+                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
+                    nearest_subway_disttance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                    nearest_cafe_disance, hospital_count, nearest_hospital_distance, status
+                    )
+                    SELECT 
+                        room_id, area, floor, deposit, rent, maintenance_fee, address, 
+                        market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
+                        nearest_subway_disttance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                        nearest_cafe_disance, hospital_count, nearest_hospital_distance, 0
+                    FROM {schema}.{table}
+                    WHERE room_id IN ({','.join(map(str, ids_to_delete))});
+                    """
+            cursor.execute(insert_sql)
+            cursor.execute("COMMIT;") 
+
+        except Exception as error:
+            print(error)
+            print("ROLLBACK")
+            cursor.execute("ROLLBACK;")
+            raise
+    
 
 
 def get_new_data(room_data, ids_to_add):
