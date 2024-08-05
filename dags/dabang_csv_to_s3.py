@@ -31,7 +31,7 @@ with DAG(
 ) as dag:
 
     fetch = PythonOperator(task_id="fetch_data", python_callable=fetch_data)
-    
+
     save_upload = PythonOperator(
         task_id="save_upload",
         python_callable=upload_to_s3,
