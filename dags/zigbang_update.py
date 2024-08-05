@@ -112,7 +112,7 @@ with DAG('zigbang_update',
         s3_key = zigbang_s3_url,			# 데이터를 가져오는 위치
         schema = "raw_data",		# 데이터를 적재할 schema
         table = "zigbang",		# 데이터를 적재할 table
-        copy_options=['parquet', 'IGNOREHEADER 1'],	# S3에서 가져올 file 확장자
+        copy_options=['parquet'],	# S3에서 가져올 file 확장자
         redshift_conn_id = "redshift_dev_db",	# Connections에서 저장한 redshift Conn id
         aws_conn_id = "s3_conn",    	# Connections에서 저장한 S3 Conn id
         method = "APPEND"
