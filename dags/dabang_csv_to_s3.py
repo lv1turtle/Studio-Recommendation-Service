@@ -9,7 +9,6 @@ import time
 
 def fetch_data():
     import extract_dabang_v2
-
     extract_dabang_v2.get_data_all()
 
 
