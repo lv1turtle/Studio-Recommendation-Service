@@ -20,6 +20,7 @@ from django.db.models import (
     Subquery,
     OuterRef,
     BooleanField,
+    Exists,
 )
 
 
@@ -250,6 +251,21 @@ class SampleDataFilteringView(APIView):
             else:
                 queryset = queryset.exclude(floor__in=["옥탑", "반지"])
 
+            # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
+            subquery = SampleAgentData.objects.filter(
+                registration_number=OuterRef("registration_number"),
+                agent_name=OuterRef("agent_name"),
+                agent_code__in=[2, 3],
+                certificate_number__isnull=False,
+            ).values("id")[:1]
+            queryset = queryset.annotate(
+                is_safe=Case(
+                    When(Exists(subquery), then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            )
+
             # 편의시설 점수 계산
             queryset = queryset.annotate(
                 market_score=Case(
@@ -351,25 +367,6 @@ class SampleDataFilteringView(APIView):
                     output_field=FloatField(),
                 )
             ).order_by("final_score")
-
-            # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
-            queryset = queryset.annotate(
-                easy_safe=Case(
-                    When(
-                        Subquery(
-                            SampleAgentData.objects.filter(
-                                registration_number=OuterRef('registration_number'),
-                                agent_name=OuterRef('agent_name'),
-                                agent_code__in=[2, 3],
-                                certificate_number__isnull=False
-                            ).values('id')[:1]    # 만족하는 레코드가 존재하는지 확인하기 위해
-                        ).exists(),
-                        then=Value(True)
-                    ),
-                    default=Value(False),
-                    output_field=BooleanField()
-                )
-            )
 
             if queryset.exists():
                 serializer = SampleDataSerializer(queryset, many=True)
