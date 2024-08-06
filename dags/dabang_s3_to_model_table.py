@@ -2,28 +2,24 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.models import DAG
+from airflow.exceptions import AirflowFailException
+from botocore.exceptions import ClientError
 
 from datetime import datetime, timedelta
 import pandas as pd
 import pyarrow.parquet as pq
 import logging
 from io import BytesIO
-from botocore.exceptions import ClientError
-from airflow.exceptions import AirflowFailException
 
-# Redshift 연결
 def get_redshift_conn(autocommit=True):
     hook = PostgresHook(postgres_conn_id="redshift_conn")
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
 
-# S3에서 parquet 파일 읽기
 def read_parquet_from_s3(bucket_name: str, key: str):
-
     s3 = S3Hook(aws_conn_id="s3_conn")
     s3_client = s3.get_conn()
-
     try:
         obj = s3_client.get_object(Bucket=bucket_name, Key=key)
         return pq.read_table(BytesIO(obj["Body"].read())).to_pandas()
@@ -38,28 +34,27 @@ def read_parquet_from_s3(bucket_name: str, key: str):
             logging.error(error_message)
             raise AirflowFailException(error_message)
 
-# 두 parquet 파일 비교
 def compare_parquet_files(bucket_name, key1, key2):
     df1 = read_parquet_from_s3(bucket_name, key1)
     df2 = read_parquet_from_s3(bucket_name, key2)
 
-    # df1에는 있고 df2에는 없는 데이터를 추출
     missing_data = df1[~df1.isin(df2.to_dict(orient="list")).all(axis=1)]
 
-    columns_to_keep = ['room_id', 'floor', 'area', 'subway_count', 'store_count', 'cafe_count', 
-                    'market_count', 'restaurant_count', 'hospital_count', 'deposit', 
-                    'rent', 'maintenance_fee', 'address']
+    columns_to_keep = ['room_id', 'floor', 'area', 'deposit','rent', 'maintenance_fee', 'address','subway_count', 'store_count', 'cafe_count', 
+                    'market_count', 'restaurant_count', 'hospital_count' ]
     
     missing_data = missing_data[columns_to_keep]
     missing_data['status'] = 0
-
+    missing_data['status'] = missing_data['status'].astype('Int16')
     return missing_data
 
 # Redshift에 데이터 저장
 def save_to_redshift(data, table_name):
     cursor = get_redshift_conn()
 
-    # DataFrame을 SQL INSERT문으로 변환
+    # DataFrame의 모든 numpy 타입을 Python의 기본 타입으로 변환
+    data = data.astype(object).where(pd.notnull(data), None)
+
     columns = ", ".join(data.columns)
     values = ", ".join(["%s"] * len(data.columns))
     insert_query = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
@@ -82,13 +77,11 @@ def compare_and_save(**kwargs):
     key1 = f"dabang/save/{execution_date_str}/dabang_{execution_date_str}.parquet"
     key2 = f"dabang/save/{execution_date_yesterday_str}/dabang_{execution_date_yesterday_str}.parquet"
     
-    # 두 파일 비교
     missing_data = compare_parquet_files(bucket_name, key1, key2)
 
-    # 결과를 Redshift에 저장
     if not missing_data.empty:
-        # save_to_redshift(missing_data, "your_redshift_table_name")
-        logging.info("Missing data:\n%s", missing_data)
+        save_to_redshift(missing_data, "transformed.property_sold_status")
+        # logging.info("Missing data:\n%s", missing_data.info())
     else:
         logging.info("No missing data found.")
 
@@ -106,12 +99,11 @@ with DAG(
     "s3_parquet_compare",
     default_args=default_args,
     description="Compare two parquet files in S3 and save missing data to Redshift",
-    schedule_interval=timedelta(days=1),
+    schedule_interval="0 7 * * *",
     start_date=datetime(2023, 8, 1),
     catchup=False,
 ) as dag:
     compare_and_save_task = PythonOperator(
         task_id="compare_and_save_task",
         python_callable=compare_and_save,
-  )
-
+    )
