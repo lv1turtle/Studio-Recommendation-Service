@@ -97,7 +97,7 @@ with DAG('zigbang_update',
                 'schema': 'raw_data',
                 'table': 'zigbang',
                 'load_schema': 'transformed',
-                'load_table': 'sold'
+                'load_table': 'property_sold_status'
             }
     )
     load_to_s3 = PythonOperator(

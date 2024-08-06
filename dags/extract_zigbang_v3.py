@@ -315,16 +315,14 @@ def insert_deleted_room_info(ids_to_delete, schema, table, load_schema, load_tab
             cursor.execute("BEGIN;")
             insert_sql = f"""
                     INSERT INTO {load_schema}.{load_table} (
-                    room_id, area, floor, deposit, rent, maintenance_fee, address, 
-                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                    nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, status
+                    room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                    market_count, store_count, subway_count, restaurant_count, cafe_count, 
+                    hospital_count, status
                     )
                     SELECT 
-                        room_id, area, floor, deposit, rent, maintenance_fee, address, 
-                        market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                        nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                        nearest_cafe_distance, hospital_count, nearest_hospital_distance, 0
+                        room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                    market_count, store_count, subway_count, restaurant_count, cafe_count, 
+                    hospital_count, 0
                     FROM {schema}.{table}
                     WHERE room_id IN ({','.join(map(str, ids_to_delete))});
                     """
@@ -346,16 +344,14 @@ def insert_unsold_room_info(schema, table, load_schema, load_table):
         cursor.execute("BEGIN;")
         insert_sql = f"""
                 INSERT INTO {load_schema}.{load_table} (
-                room_id, area, floor, deposit, rent, maintenance_fee, address, 
-                market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                nearest_cafe_distance, hospital_count, nearest_hospital_distance, status
+                room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                market_count, store_count, subway_count, restaurant_count, cafe_count, 
+                hospital_count, status
                 )
                 SELECT 
-                    room_id, area, floor, deposit, rent, maintenance_fee, address, 
-                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                    nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, 1
+                    room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                    market_count, store_count, subway_count, restaurant_count, cafe_count, 
+                    hospital_count, 1
                 FROM {schema}.{table} t
                 WHERE t.update_at < current_date - INTERVAL '31 days'
                     AND NOT EXISTS (
