@@ -37,8 +37,8 @@ const GetFloor = () => {
                   values={floor}
                   onChange={setFloor}
                 >
-                  <Checkbox value="옥탑">옥탑방</Checkbox>
-                  <Checkbox value="반지하">반지하</Checkbox>
+                  <Checkbox value="옥탑">옥탑방 제외</Checkbox>
+                  <Checkbox value="반지하">반지하 제외</Checkbox>
                 </CheckboxGroup>
               </div>
             </section>

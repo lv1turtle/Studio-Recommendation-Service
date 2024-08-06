@@ -19,7 +19,7 @@ const NaverMap = ({latitude, longitude}) => {
         map,
       });
     }
-  }, []);
+  }, [latitude, longitude]);
 
   return (
     <div ref={mapRef} style={{ width: "500px", height: "500px" }}></div>

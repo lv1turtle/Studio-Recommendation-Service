@@ -12,9 +12,9 @@ const GetCost = () => {
   const setAddress = useSetRecoilState(addressAtom);
   const address = useRecoilValue(addressAtom);
   const [minDeposit, setMinDeposit] = useState(0);
-  const [maxDeposit, setMaxDeposit] = useState(20000);
+  const [maxDeposit, setMaxDeposit] = useState(30000);
   const [minRent, setMinRent] = useState(0);
-  const [maxRent, setMaxRent] = useState(150);
+  const [maxRent, setMaxRent] = useState(200);
   const [checkFee, setCheckFee] = useState(false);
   const navigate = useNavigate();
 
@@ -54,10 +54,10 @@ const GetCost = () => {
                     <ReactSlider
                       thumbClassName={style["thumb"]}
                       trackClassName={style["track"]}
-                      defaultValue={[0, 20000]}
+                      defaultValue={[0, 30000]}
                       min={0}
-                      max={20000}
-                      step={100}
+                      max={30000}
+                      step={1000}
                       renderThumb={(props, state) => <div {...props}>{state.valueNow}</div>}
                       onChange={changeDeposit}
                     />
@@ -79,10 +79,10 @@ const GetCost = () => {
                   <ReactSlider
                     thumbClassName={style["thumb"]}
                     trackClassName={style["track"]}
-                    defaultValue={[0, 150]}
+                    defaultValue={[0, 200]}
                     min={0}
-                    max={150}
-                    step={5}
+                    max={200}
+                    step={10}
                     renderThumb={(props, state) => <div {...props}>{state.valueNow}</div>}
                     onChange={changeRent}
                   />

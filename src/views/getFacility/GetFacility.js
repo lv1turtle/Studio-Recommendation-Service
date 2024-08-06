@@ -47,12 +47,16 @@ const GetFacility = () => {
                   values={selectedFacilities}
                   onChange={setSelectedFacilities}
                 >
+                  <div>
                   <Checkbox value="대형마트">대형마트</Checkbox>
                   <Checkbox value="편의점">편의점</Checkbox>
                   <Checkbox value="지하철">지하철역</Checkbox>
+                  </div>
+                  <div>
                   <Checkbox value="음식점">음식점</Checkbox>
                   <Checkbox value="카페">카페</Checkbox>
                   <Checkbox value="병원">병원</Checkbox>
+                  </div>
                 </CheckboxGroup>
               </div>
               <button onClick={clickEvent} className={styles["move-button"]}>이동</button>
