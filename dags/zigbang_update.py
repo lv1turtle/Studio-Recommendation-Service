@@ -20,6 +20,8 @@ def fetch_room_data(**context):
 def update_to_redshift(**context):
     schema = context["params"]["schema"]
     table = context["params"]["table"]
+    load_schema = context["params"]["load_schema"]
+    load_table = context["params"]["load_table"]
     
     # xcom으로 공유한 직방 매물 데이터를 받아옴
     ti = context['ti']
@@ -33,8 +35,14 @@ def update_to_redshift(**context):
     # 추가해야 할 매물 데이터를 xcom을 통해 task간 공유 (insert)
     ti.xcom_push(key='ids_to_add', value=ids_to_add)
 
+    # 사라진 매물들(판매된 매물들)을 sold 테이블에 적재
+    extract_zigbang_v3.insert_deleted_room_info(ids_to_delete, schema, table, load_schema, load_table)
+
     # 사라진 매물들을 테이블에서 제거 (delete)
     extract_zigbang_v3.delete_deleted_room_info(ids_to_delete, schema, table)
+
+    # update_at이 31일 이상인 데이터를 sold 테이블에 적재
+    extract_zigbang_v3.insert_unsold_room_info(schema, table, load_schema, load_table)
 
     # 추가된 데이터가 아닌 기존 데이터들은 상태 정보만 갱신 (update)
     maintained_data = extract_zigbang_v3.get_maintained_data(room_data, ids_to_add)
@@ -87,7 +95,9 @@ with DAG('zigbang_update',
         python_callable=update_to_redshift,
         params={
                 'schema': 'raw_data',
-                'table': 'zigbang'
+                'table': 'zigbang',
+                'load_schema': 'transformed',
+                'load_table': 'sold'
             }
     )
     load_to_s3 = PythonOperator(

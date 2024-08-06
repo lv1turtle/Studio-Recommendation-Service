@@ -139,7 +139,7 @@ def extract_room_info(id, delay=2):
         raise
 
 
-# id 기반 매물 추출, dataframe으로 반환
+# id 기반 매물 추출(편의시설 데이터까지 추출), dataframe으로 반환
 def extract_room_info_include_facilities(id, delay=2):
     url = f"https://apis.zigbang.com/v3/items/{id}?version=&domain=zigbang"
     
@@ -183,6 +183,7 @@ def extract_room_info_include_facilities(id, delay=2):
                 room_data["title"] = item_data["title"]
                 room_data["description"] = item_data["description"]
                 room_data["image_link"] = item_data["imageThumbnail"] + "?w=400&h=300&q=70&a=1"
+                room_data["update_at"] = item_data["updatedAt"]
 
                 return room_data
             else:
@@ -316,14 +317,14 @@ def insert_deleted_room_info(ids_to_delete, schema, table, load_schema, load_tab
                     INSERT INTO {load_schema}.{load_table} (
                     room_id, area, floor, deposit, rent, maintenance_fee, address, 
                     market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                    nearest_subway_disttance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                    nearest_cafe_disance, hospital_count, nearest_hospital_distance, status
+                    nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, status
                     )
                     SELECT 
                         room_id, area, floor, deposit, rent, maintenance_fee, address, 
                         market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
-                        nearest_subway_disttance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                        nearest_cafe_disance, hospital_count, nearest_hospital_distance, 0
+                        nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                        nearest_cafe_distance, hospital_count, nearest_hospital_distance, 0
                     FROM {schema}.{table}
                     WHERE room_id IN ({','.join(map(str, ids_to_delete))});
                     """
@@ -336,6 +337,41 @@ def insert_deleted_room_info(ids_to_delete, schema, table, load_schema, load_tab
             cursor.execute("ROLLBACK;")
             raise
     
+
+# 미 판매된 매물 sold 테이블에 insert
+def insert_unsold_room_info(schema, table, load_schema, load_table):
+    cursor = get_Redshift_connection()
+
+    try:
+        cursor.execute("BEGIN;")
+        insert_sql = f"""
+                INSERT INTO {load_schema}.{load_table} (
+                room_id, area, floor, deposit, rent, maintenance_fee, address, 
+                market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
+                nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                nearest_cafe_distance, hospital_count, nearest_hospital_distance, status
+                )
+                SELECT 
+                    room_id, area, floor, deposit, rent, maintenance_fee, address, 
+                    market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
+                    nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
+                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, 1
+                FROM {schema}.{table} t
+                WHERE t.update_at < current_date - INTERVAL '31 days'
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM {load_schema}.{load_table} lt
+                        WHERE lt.room_id = t.room_id
+                    );
+                """
+        cursor.execute(insert_sql)
+        cursor.execute("COMMIT;") 
+
+    except Exception as error:
+        print(error)
+        print("ROLLBACK")
+        cursor.execute("ROLLBACK;")
+        raise
 
 
 def get_new_data(room_data, ids_to_add):
@@ -424,6 +460,7 @@ def alter_room_info(maintained_data, schema, table):
                         agency_name VARCHAR(100),
                         agent_name VARCHAR(100),
                         image_link VARCHAR(255),
+                        update_at DATETIME
 
                         PRIMARY KEY (room_id)
             );""")
@@ -432,15 +469,15 @@ def alter_room_info(maintained_data, schema, table):
                 insert_sql = f"""
                     INSERT INTO {schema}.tmp (
                         room_id, platform, room_type, service_type, title, description, floor, area, deposit, rent, maintenance_fee, latitude, longitude, address, 
-                        property_link, registration_number, agency_name, agent_name, image_link
+                        property_link, registration_number, agency_name, agent_name, image_link, update_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """
                 cursor.execute(insert_sql, (
                     record["room_id"], record["platform"], record["room_type"], record["service_type"], record["title"], record["description"], record["floor"], record["area"], record["deposit"], record["rent"], \
                     record["maintenance_fee"], record["latitude"], record["longitude"], record["address"], record["property_link"], record["registration_number"],  \
-                    record["agency_name"], record["agent_name"], record["image_link"]))
+                    record["agency_name"], record["agent_name"], record["image_link"], record["update_at"]))
             
             join_sql = f"""
                 CREATE TABLE {schema}.join_tmp AS
@@ -454,7 +491,7 @@ def alter_room_info(maintained_data, schema, table):
                         market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                         nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                         nearest_cafe_distance, hospital_count, nearest_hospital_distance, 
-                        title, description, image_link
+                        title, description, image_link, update_at
                 FROM {schema}.tmp t
                 JOIN o ON o.o_room_id = t.room_id;
             """
@@ -467,14 +504,14 @@ def alter_room_info(maintained_data, schema, table):
                     latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
                     market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link
+                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link, update_at
                 )
                 SELECT 
                     room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
                     latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
                     market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
-                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link
+                    nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link, update_at
                 FROM {schema}.join_tmp;
             """
             cursor.execute(alter_sql)
