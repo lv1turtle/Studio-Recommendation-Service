@@ -456,7 +456,7 @@ def alter_room_info(maintained_data, schema, table):
                         agency_name VARCHAR(100),
                         agent_name VARCHAR(100),
                         image_link VARCHAR(255),
-                        update_at DATETIME
+                        update_at TIMESTAMP
 
                         PRIMARY KEY (room_id)
             );""")
