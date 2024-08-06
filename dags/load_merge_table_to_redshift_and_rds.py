@@ -184,7 +184,7 @@ def load_merge_table_to_rds(**context):
 dag = DAG(
     dag_id = 'load_merge_table_to_redshift_and_rds',
     start_date = datetime(2024, 7, 1),
-    schedule_interval = '0 4 * * *',
+    schedule_interval = '0 6 * * *',
     catchup = False,
     default_args = {
         'owner' : 'sangmin',

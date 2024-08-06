@@ -91,8 +91,8 @@ def analytics_property_position_and_fee(**context):
         raise
 
 
-# analytics.property_having_all_facility 테이블 생성
-def analytics_property_having_all_facility(**context):
+# analytics.property_having_all_facility_count 테이블 생성
+def analytics_property_having_all_facility_count(**context):
     cur = get_redshift_conn()
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -102,7 +102,7 @@ def analytics_property_having_all_facility(**context):
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
         analytics_query = f"""
                         CREATE TABLE {schema}.{table} AS (
-                            SELECT district, COUNT(*) AS property_count
+                            SELECT district, CAST(COUNT(*) AS INTEGER) AS property_count
                             FROM transformed.property
                             WHERE subway_count > 0
                                 AND store_count > 0
@@ -131,7 +131,7 @@ def analytics_property_agency_count(**context):
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
         analytics_query = f"""
                         CREATE TABLE {schema}.{table} AS (
-                            SELECT agency_name, COUNT(*) AS property_count
+                            SELECT agency_name, CAST(COUNT(*) AS INTEGER) AS property_count
                             FROM transformed.property
                             GROUP BY 1
                         );"""
@@ -161,7 +161,7 @@ def analytics_property_floor_count(**context):
                                     WHEN floor = '옥탑' THEN '옥탑방'
                                     ELSE floor
                                 END AS floor,
-                                COUNT(*) AS property_count
+                                CAST(COUNT(*) AS INTEGER) AS property_count
                             FROM transformed.property
                             WHERE floor NOT LIKE '%고%' AND floor NOT LIKE '%중%' AND floor NOT LIKE '%저%'
                             GROUP BY 1
@@ -191,7 +191,7 @@ def analytics_agency_certificate_count(**context):
                                 WHEN a.agent_code NOT IN (2, 3) THEN '미인증'
                                 ELSE '인증'
                             END AS certificate_status,
-                            COUNT(*) AS count
+                            CAST(COUNT(*) AS INTEGER) AS property_count
                             FROM transformed.property AS p
                             LEFT JOIN raw_data.agency_details AS a
                             ON p.registration_number = a.registration_number AND p.agent_name = a.agent_name
@@ -205,8 +205,8 @@ def analytics_agency_certificate_count(**context):
         raise
 
 
-# analytics.agency_not_certificate 테이블 생성
-def analytics_agency_not_certificate(**context):
+# analytics.property_not_certificate 테이블 생성
+def analytics_property_not_certificate(**context):
     cur = get_redshift_conn()
     schema = context["params"]["schema"]
     table = context["params"]["table"]
@@ -216,7 +216,7 @@ def analytics_agency_not_certificate(**context):
         cur.execute(f"DROP TABLE IF EXISTS {schema}.{table};")
         analytics_query = f"""
                         CREATE TABLE {schema}.{table} AS (
-                            SELECT p.agency_name, p.agent_name, COUNT(*) AS count
+                            SELECT p.agency_name, p.agent_name, CAST(COUNT(*) AS INTEGER) AS property_count
                             FROM transformed.property AS p
                             LEFT JOIN raw_data.agency_details AS a
                             ON p.registration_number = a.registration_number AND p.agent_name = a.agent_name
@@ -259,11 +259,11 @@ analytics_property_position_and_fee = PythonOperator(
     dag = dag
 )
 
-analytics_property_having_all_facility = PythonOperator(
-    task_id = 'analytics_property_having_all_facility',
-    python_callable = analytics_property_having_all_facility,
+analytics_property_having_all_facility_count = PythonOperator(
+    task_id = 'analytics_property_having_all_facility_count',
+    python_callable = analytics_property_having_all_facility_count,
     params = {'schema' : 'analytics',
-            'table' : 'property_having_all_facility'},
+            'table' : 'property_having_all_facility_count'},
     dag = dag
 )
 
@@ -291,12 +291,12 @@ analytics_agency_certificate_count = PythonOperator(
     dag = dag
 )
 
-analytics_agency_not_certificate = PythonOperator(
-    task_id = 'analytics_agency_not_certificate',
-    python_callable = analytics_agency_not_certificate,
+analytics_property_not_certificate = PythonOperator(
+    task_id = 'analytics_property_not_certificate',
+    python_callable = analytics_property_not_certificate,
     params = {'schema' : 'analytics',
-            'table' : 'agency_not_certificate'},
+            'table' : 'property_not_certificate'},
     dag = dag
 )
 
-transform_property >> [analytics_property_position_and_fee, analytics_property_having_all_facility, analytics_property_agency_count, analytics_property_floor_count, analytics_agency_certificate_count, analytics_agency_not_certificate]
+transform_property >> [analytics_property_position_and_fee, analytics_property_having_all_facility_count, analytics_property_agency_count, analytics_property_floor_count, analytics_agency_certificate_count, analytics_property_not_certificate]
