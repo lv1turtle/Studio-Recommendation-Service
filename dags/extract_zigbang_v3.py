@@ -351,7 +351,7 @@ def insert_unsold_room_info(schema, table, load_schema, load_table):
                 SELECT 
                     room_id, floor, area, deposit, rent, maintenance_fee, address, 
                     market_count, store_count, subway_count, restaurant_count, cafe_count, 
-                    hospital_count, 1
+                    hospital_count, 1 AS status
                 FROM {schema}.{table} t
                 WHERE t.update_at < current_date - INTERVAL '31 days'
                     AND NOT EXISTS (
