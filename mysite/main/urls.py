@@ -4,7 +4,15 @@ from main import views
 
 
 urlpatterns = [
-    path("getAll/", views.SampleDataListView.as_view(), name="SampleDataListView"),
-    path("getDetail/", views.SampleDataDetailView.as_view(), name="SampleDataDetailView"),
-    path("getFilter/", views.SampleDataFilteringView.as_view(), name="SampleDataFilteringView"),
+    # path("getAll/", views.PropertyDataListView.as_view(), name="SampleDataListView"),
+    path(
+        "getDetail/",
+        views.PropertyDataDetailView.as_view(),
+        name="SampleDataDetailView",
+    ),
+    path(
+        "getFilter/",
+        views.PropertyDataFilteringView.as_view(),
+        name="SampleDataFilteringView",
+    ),
 ]
