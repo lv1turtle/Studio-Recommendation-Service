@@ -109,7 +109,7 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     FROM external_schema.dabang
                                     )
                                 )
-                                SELECT room_id, platform, service_type, REPLACE(title, ',', '.') AS title, floor, area, deposit, rent,
+                                SELECT room_id, platform, service_type, REPLACE(REPLACE(title, ',', '.'), '\n', '. ') AS title, floor, area, deposit, rent,
                                     maintenance_fee, address, latitude, longitude, registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
@@ -175,6 +175,7 @@ def load_merge_table_to_rds(**context):
             IGNORE 1 LINES
             """
         )
+        cursor.execute("ALTER TABLE production.property ADD COLUMN status smallint")
         cursor.close()
         conn.commit()
     finally:
