@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.generics import ListAPIView
-from .models import SampleData, SampleAgentData
-from .serializers import SampleDataSerializer
+from .models import *
+from .serializers import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.db.models.functions import RowNumber
@@ -16,38 +16,23 @@ from django.db.models import (
     Value,
     IntegerField,
     FloatField,
-    Window,
-    Subquery,
     OuterRef,
+    Exists,
     BooleanField,
+    Window,
 )
 
 
-class SampleDataListView(ListAPIView):
-    queryset = SampleData.objects.all()
-    serializer_class = SampleDataSerializer
+# class PropertyDataListView(ListAPIView):
+#     queryset = Property.objects.all()
+#     serializer_class = PropertyDataSerializer
 
 
-# class SampleDataDetailView(APIView):
-#     @swagger_auto_schema(
-#         operation_description="Get a SampleData object by ID",
-#         responses={200: SampleDataSerializer(), 404: "Not Found"},
-#         manual_parameters=[openapi.Parameter("id", openapi.IN_PATH, description="매물 ID", type=openapi.TYPE_INTEGER)],
-#     )
-#     def get(self, request, id, format=None):
-#         try:
-#             sample_data = SampleData.objects.get(id=id)
-#             serializer = SampleDataSerializer(sample_data)
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         except SampleData.DoesNotExist:
-#             return Response({"error": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
-
-
-class SampleDataDetailView(APIView):
+class PropertyDataDetailView(APIView):
     @swagger_auto_schema(
-        operation_description="Get a SampleData object by ID",
+        operation_description="Get a PropertyData object by ID",
         responses={
-            200: SampleDataSerializer(),
+            200: PropertyDataSerializer(),
             404: "Not Found",
         },
         manual_parameters=[
@@ -55,7 +40,7 @@ class SampleDataDetailView(APIView):
                 "id",
                 openapi.IN_QUERY,
                 description="매물 ID",
-                type=openapi.TYPE_INTEGER,
+                type=openapi.TYPE_STRING,
             )
         ],
     )
@@ -68,10 +53,10 @@ class SampleDataDetailView(APIView):
             )
 
         try:
-            sample_data = SampleData.objects.get(id=id)
-            serializer = SampleDataSerializer(sample_data)
+            Property_data = Property.objects.get(room_id=id)
+            serializer = PropertyDataSerializer(Property_data)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except SampleData.DoesNotExist:
+        except Property.DoesNotExist:
             return Response(
                 {"error": "Not Found"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -86,11 +71,11 @@ class SampleDataDetailView(APIView):
 # 추천 알고리즘 적용된 매물들
 # request: 필터링 항목들, 리스트 형태로 바꾸기 TYPE_ARRAY 있음
 # response: 매물 목록, pagination
-class SampleDataFilteringView(APIView):
+class PropertyDataFilteringView(APIView):
 
     @swagger_auto_schema(
-        operation_description="Get SampleData objects by filtering",
-        responses={200: SampleDataSerializer(many=True), 404: "Not Found"},
+        operation_description="Get PropertyData objects by filtering",
+        responses={200: PropertyDataSerializer(many=True), 404: "Not Found"},
         manual_parameters=[
             openapi.Parameter(
                 "address",
@@ -171,7 +156,7 @@ class SampleDataFilteringView(APIView):
 
         try:
             # 기본 필터링 조건 적용
-            queryset = SampleData.objects.filter(address__icontains=address)
+            queryset = Property.objects.filter(address__icontains=address)
 
             # 보증금 최소값 필터링 조건 추가
             if min_deposit is not None:
@@ -247,8 +232,23 @@ class SampleDataFilteringView(APIView):
                     queryset = queryset.exclude(floor__icontains="반지")
                 elif floor_options == "반지하":
                     queryset = queryset.exclude(floor__icontains="옥탑")
-            else:
-                queryset = queryset.exclude(floor__in=["옥탑", "반지"])
+            # else:
+            #     queryset = queryset.include(floor__in=["옥탑", "반지"])
+
+            # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
+            subquery = agency_details.objects.filter(
+                registration_number=OuterRef("registration_number"),
+                agent_name=OuterRef("agent_name"),
+                agent_code__in=[2, 3],
+                certificate_number__isnull=False,
+            ).values("registration_number")[:1]
+            queryset = queryset.annotate(
+                is_safe=Case(
+                    When(Exists(subquery), then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            )
 
             # 편의시설 점수 계산
             queryset = queryset.annotate(
@@ -352,27 +352,8 @@ class SampleDataFilteringView(APIView):
                 )
             ).order_by("final_score")
 
-            # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
-            queryset = queryset.annotate(
-                easy_safe=Case(
-                    When(
-                        Subquery(
-                            SampleAgentData.objects.filter(
-                                registration_number=OuterRef('registration_number'),
-                                agent_name=OuterRef('agent_name'),
-                                agent_code__in=[2, 3],
-                                certificate_number__isnull=False
-                            ).values('id')[:1]    # 만족하는 레코드가 존재하는지 확인하기 위해
-                        ).exists(),
-                        then=Value(True)
-                    ),
-                    default=Value(False),
-                    output_field=BooleanField()
-                )
-            )
-
             if queryset.exists():
-                serializer = SampleDataSerializer(queryset, many=True)
+                serializer = PropertyDataSerializer(queryset, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(
