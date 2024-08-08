@@ -8,7 +8,28 @@ kakao_api_key = Variable.get("kakao_api_key_dabang")
 
 # 다방 request url
 dabang_base_url = Variable.get("dabang_base_url")
-dabang_headers = Variable.get("dabang_headers")
+dabang_headers = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
+    "Cookie": "_fwb=37od3E9MpyXVmFsL4IofFB.1720697470212; _fbp=fb.1.1720697470585.225224189142580448; _gcl_aw=GCL.1720697471.Cj0KCQjwhb60BhClARIsABGGtw-kc-hlUX7yjy6_4EHU8ub7a9PsTdTTN1p5i12H1O7P4uS3z-JEWoUaAjkGEALw_wcB; _gcl_gs=2.1.k1$i1720697470; _gid=GA1.2.363020388.1720697472; _gac_UA-59111157-1=1.1720697472.Cj0KCQjwhb60BhClARIsABGGtw-kc-hlUX7yjy6_4EHU8ub7a9PsTdTTN1p5i12H1O7P4uS3z-JEWoUaAjkGEALw_wcB; ring-session=1391973f-c2b6-42db-a949-9ce55784cd56; wcs_bt=s_3d10ff175f87:1720698474; _ga=GA1.1.844565415.1720697471; _ga_QMSMS2LS99=GS1.1.1720697470.1.1.1720698475.54.0.0",
+    "Csrf": "token",
+    "D-Api-Version": "5.0.0",
+    "D-App-Version": "1",
+    "D-Call-Type": "web",
+    "Expires": "-1",
+    "Pragma": "no-cache",
+    "Priority": "u=1, i",
+    "Referer": "https://www.dabangapp.com/map/onetwo?sellingTypeList=%5B%22MONTHLY_RENT%22%5D&m_lat=37.5822204&m_lng=126.9710212&m_zoom=13",
+    "Sec-Ch-Ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+}
 
 category_group_code = {
     "대형마트": "MT1",
