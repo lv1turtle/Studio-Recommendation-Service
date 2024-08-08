@@ -165,6 +165,7 @@ def load_merge_table_to_rds(**context):
         conn = mysql.get_conn()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM production.property")
+        cursor.execute("ALTER TABLE production.property DROP COLUMN status")
         cursor.execute(
             f"""
             LOAD DATA LOCAL INFILE '{file}'
