@@ -126,6 +126,7 @@ class PropertyDataFilteringView(APIView):
                 description="옥탑,반지하 포함 미포함",
                 type=openapi.TYPE_ARRAY,
                 items=openapi.Items(type=openapi.TYPE_STRING),
+                explode = True,
             ),
         ],
     )
@@ -136,8 +137,8 @@ class PropertyDataFilteringView(APIView):
         include_maintenance_fee = request.GET.get("include_maintenance_fee") == "true"
         min_rent = request.GET.get("min_rent")
         max_rent = request.GET.get("max_rent")
-        facilities = request.GET.get("facilities")
-        floor_options = request.GET.get("floor_options")
+        facilities = request.GET.getlist("facilities[]")
+        floor_options = request.GET.getlist("floor_options[]")
 
         facility_info = {
             "편의점": "store_count",
@@ -217,23 +218,21 @@ class PropertyDataFilteringView(APIView):
                         {"error": "max_rent must be an integer"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-
             # 편의시설 필터링 조건 추가
-            if facilities is not None:
-                facilities = facilities.replace("'", "").split(",")
+            if facilities:
                 for facility in facilities:
                     field_name = facility_info.get(facility)
                     if field_name:
                         queryset = queryset.filter(**{f"{field_name}__gte": 1})
-
+                                            
             # 층 옵션 필터링 조건 추가
             if floor_options:
-                if floor_options == "옥탑":
-                    queryset = queryset.exclude(floor__icontains="반지")
-                elif floor_options == "반지하":
+                if floor_options == ["옥탑"]:
                     queryset = queryset.exclude(floor__icontains="옥탑")
-            # else:
-            #     queryset = queryset.include(floor__in=["옥탑", "반지"])
+                elif floor_options == ["반지하"]:
+                    queryset = queryset.exclude(floor__in=["반지하", "반지층"])
+                else:
+                    queryset = queryset.exclude(floor__in=["반지하", "반지층","옥탑"])
 
             # 안심 부동산 체크 (agent_code가 2, 3이고 자격증이 있는 경우(not null))
             subquery = agency_details.objects.filter(
