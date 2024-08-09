@@ -4,9 +4,9 @@ import pandas as pd
 from airflow.hooks.postgres_hook import PostgresHook
 
 # kakaomap API
-kakaomap_url = 'https://dapi.kakao.com/v2/local/search/keyword.json'
-headers = {"Authorization": "KakaoAK 0b802f8cc02b1b1343b8706eaf18efd1"}
-category_group = {
+KAKAOMAP_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
+HEADERS = {"Authorization": "KakaoAK 0b802f8cc02b1b1343b8706eaf18efd1"}
+CATEGORY_GROUP = {
                     "대형마트":{
                         "code":"MT1",
                         "radius":1712,
@@ -202,10 +202,10 @@ def extract_room_info_include_facilities(id, delay=2):
 # 주변 편의시설 데이터 수집
 def extract_nearest_all_facilities_info(lng, lat) -> dict:
     data = dict()
-    for category in category_group.keys():
-        params = {'query' : category, 'x' : lng, 'y' : lat, 'radius' : category_group[category]["radius"], 'category_group_code' : category_group[category]["code"]}
+    for category in CATEGORY_GROUP.keys():
+        params = {'query' : category, 'x' : lng, 'y' : lat, 'radius' : CATEGORY_GROUP[category]["radius"], 'CATEGORY_GROUP_code' : CATEGORY_GROUP[category]["code"]}
         
-        response = requests.get(kakaomap_url, params=params, headers=headers)
+        response = requests.get(KAKAOMAP_URL, params=params, headers=HEADERS)
 
         request = response.json()
         count = request['meta']['total_count']
@@ -214,8 +214,8 @@ def extract_nearest_all_facilities_info(lng, lat) -> dict:
         else: 
             nearest_distance = None
         
-        data[category_group[category]["eng"]+"_count"] = count
-        data[f"nearest_"+category_group[category]["eng"]+"_distance"] = nearest_distance
+        data[CATEGORY_GROUP[category]["eng"]+"_count"] = count
+        data[f"nearest_"+CATEGORY_GROUP[category]["eng"]+"_distance"] = nearest_distance
 
     return data
 
@@ -254,7 +254,7 @@ def extract_room_data(room_ids):
 
 
 def get_Redshift_connection(autocommit=True):
-    hook = PostgresHook(postgres_conn_id='redshift_dev_db')
+    hook = PostgresHook(postgres_conn_id='redshift_conn')
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
