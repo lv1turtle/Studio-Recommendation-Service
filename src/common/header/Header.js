@@ -5,7 +5,7 @@ const Header = () => {
   return (
     <>
       <header className={style["header"]}>
-        <div className={style["logo"]}><Link to="/">바로방</Link></div>
+        <div className={style["logo"]}><Link to="/">다바방</Link></div>
         <nav className={style["nav"]}>
           <Link to="/faq">FAQ</Link>
           <Link to="/contact">문의하기</Link>

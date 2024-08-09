@@ -194,7 +194,7 @@ const ViewInfo = () => {
             </div>
           ) : (
             <div className={style.card}>
-                <p>해당하는 매물이 없습니다!</p> */
+                <p>해당하는 매물이 없습니다!</p>
                 <p>다시 검색해 주세요.</p>
                 <div className={style["logo"]}><Link to="/">돌아가기</Link></div>
             </div>
