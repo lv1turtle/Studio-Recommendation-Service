@@ -135,6 +135,8 @@ const ViewInfo = () => {
                 <div className={style.line}><b>매물 링크</b> <a target="_blank"
                                                             href={data[currentPage].property_link}>{data[currentPage].property_link}</a>
                 </div>
+                {data[currentPage].status === 0 && (<div className={style.line}><b>AI의 분석 결과</b><p>판매 가능성이 높은 매물이에요!</p></div>)}
+                
                 <h4>위치 및 주변 편의 시설</h4>
                 {data[currentPage].latitude && data[currentPage].longitude && (
                   <NaverMap latitude={data[currentPage].latitude} longitude={data[currentPage].longitude}/>
