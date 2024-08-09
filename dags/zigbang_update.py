@@ -7,6 +7,12 @@ from airflow.providers.amazon.aws.transfers.s3_to_redshift import S3ToRedshiftOp
 import extract_zigbang_v3
 
 
+S3_BUCKET_NAME = "team-ariel-1-bucket"
+# 가장 최근 파일명
+yesterday = datetime.now() - timedelta(days=1)
+ZIGBANG_S3_URL = f"zigbang/zigbang_2024-07-29{yesterday.strftime('%Y-%m-%d')}.parquet"
+
+
 # 직방 매물 데이터를 수집해서 airflow xcom을 이용해 task간 데이터 공유
 def fetch_room_data(**context):
     room_ids = extract_zigbang_v3.extract_room_ids()
@@ -76,9 +82,7 @@ def clear_data(filename: str) -> None:
     import os
     os.remove(filename)
 
-# 가장 최근 파일명
-yesterday = datetime.now() - timedelta(days=1)
-zigbang_s3_url = f"zigbang/zigbang_2024-07-29{yesterday.strftime('%Y-%m-%d')}.parquet"
+
 
 with DAG('zigbang_update',
         schedule_interval='0 2 * * *',
@@ -106,7 +110,7 @@ with DAG('zigbang_update',
         params={
                 'filename': '/opt/airflow/data/zigbang.parquet',
                 'key': 'zigbang/zigbang_ymd.parquet',
-                'bucket_name': 'team-ariel-1-bucket'
+                'bucket_name': S3_BUCKET_NAME
             }
     )
     clear_data = PythonOperator(
@@ -118,12 +122,12 @@ with DAG('zigbang_update',
     )
     load_zigbang_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id = "load_zigbang_data_to_redshift_from_s3",
-        s3_bucket = "team-ariel-1-bucket",	# 데이터를 가져오는 S3 bucket 이름
-        s3_key = zigbang_s3_url,			# 데이터를 가져오는 위치
+        s3_bucket = S3_BUCKET_NAME,	# 데이터를 가져오는 S3 bucket 이름
+        s3_key = ZIGBANG_S3_URL,			# 데이터를 가져오는 위치
         schema = "raw_data",		# 데이터를 적재할 schema
         table = "zigbang",		# 데이터를 적재할 table
         copy_options=['parquet'],	# S3에서 가져올 file 확장자
-        redshift_conn_id = "redshift_dev_db",	# Connections에서 저장한 redshift Conn id
+        redshift_conn_id = "redshift_conn",	# Connections에서 저장한 redshift Conn id
         aws_conn_id = "s3_conn",    	# Connections에서 저장한 S3 Conn id
         method = "APPEND"
     )

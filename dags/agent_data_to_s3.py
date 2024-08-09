@@ -1,6 +1,3 @@
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -13,6 +10,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 import zipfile
 import os
 import shutil
+
+
 
 # 디렉토리 내 모든 파일 삭제
 def clear_directory(directory):

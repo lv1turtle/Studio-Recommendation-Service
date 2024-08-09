@@ -8,7 +8,8 @@ from airflow.providers.mysql.hooks.mysql import MySqlHook
 from datetime import datetime
 import os
 
-
+S3_BUCKET_NAME = "team-ariel-1-bucket"
+DOWNLOAD_PATH = "/opt/airflow/data/agent/"
 
 # agent 데이터를 다운로드
 def download_data(download_path):
@@ -97,7 +98,7 @@ with DAG(
         task_id='download_data',
         python_callable=download_data,
         op_kwargs={
-            "download_path": "/opt/airflow/data/agent/"
+            "download_path": DOWNLOAD_PATH
         }
     )
 
@@ -105,7 +106,7 @@ with DAG(
         task_id='transform',
         python_callable=transform,
         op_kwargs={
-            "download_path": "/opt/airflow/data/agent/"
+            "download_path": DOWNLOAD_PATH
         }
     )
 
@@ -113,7 +114,7 @@ with DAG(
         task_id='load_csv_to_s3',
         python_callable=load_csv_to_s3,
         params={
-            "bucket_name": "team-ariel-1-bucket"
+            "bucket_name": S3_BUCKET_NAME
         }
     )
 
@@ -124,12 +125,12 @@ with DAG(
 
     load_agent_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id="load_agent_data_to_redshift_from_s3",
-        s3_bucket="team-ariel-1-bucket",
+        s3_bucket=S3_BUCKET_NAME,
         s3_key="{{ task_instance.xcom_pull(task_ids='transform')['s3_url'] }}",
         schema="raw_data",
         table="agency_details",
         copy_options=['csv', 'IGNOREHEADER 1'],
-        redshift_conn_id="redshift_dev_db",
+        redshift_conn_id="redshift_conn",
         aws_conn_id="s3_conn",
         method="REPLACE"
     )
@@ -140,7 +141,7 @@ with DAG(
         params={
             "schema": "production",
             "table": "agency_details",
-            "bucket_name": "team-ariel-1-bucket"
+            "bucket_name": S3_BUCKET_NAME
         }
     )
 
