@@ -170,4 +170,4 @@ with DAG(
         python_callable=clear_directory
     )
 
-    fetch_transform_train_data >> preprocessing_train_data >> train_ml >> fetch_preprocessed_property_from_rds >> predict_status >> update_predicted_status_in_rds
+    fetch_transform_train_data >> preprocessing_train_data >> train_ml >> fetch_preprocessed_property_from_rds >> predict_status >> update_predicted_status_in_rds >> clear_directory
