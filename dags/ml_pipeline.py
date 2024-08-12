@@ -178,15 +178,15 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
                     WHEN floor LIKE '%고%' THEN '기타'
                     WHEN floor LIKE '%층' THEN
                         CASE
-                            WHEN CAST(REPLACE(floor, '층', '') AS INTEGER) BETWEEN 1 AND 2 THEN '저'
-                            WHEN CAST(REPLACE(floor, '층', '') AS INTEGER) BETWEEN 3 AND 14 THEN '중'
-                            WHEN CAST(REPLACE(floor, '층', '') AS INTEGER) >= 15 THEN '고'
+                            WHEN CAST(REPLACE(floor, '층', '') AS SIGNED) BETWEEN 1 AND 2 THEN '저'
+                            WHEN CAST(REPLACE(floor, '층', '') AS SIGNED) BETWEEN 3 AND 14 THEN '중'
+                            WHEN CAST(REPLACE(floor, '층', '') AS SIGNED) >= 15 THEN '고'
                         END
                     WHEN floor NOT LIKE '%층' THEN
                         CASE
-                            WHEN CAST(floor AS INTEGER) BETWEEN 1 AND 2 THEN '저'
-                            WHEN CAST(floor AS INTEGER) BETWEEN 3 AND 14 THEN '중'
-                            WHEN CAST(floor AS INTEGER) >= 15 THEN '고'
+                            WHEN CAST(floor AS SIGNED) BETWEEN 1 AND 2 THEN '저'
+                            WHEN CAST(floor AS SIGNED) BETWEEN 3 AND 14 THEN '중'
+                            WHEN CAST(floor AS SIGNED) >= 15 THEN '고'
                         END
                     ELSE '기타'
                 END AS floor_level,
