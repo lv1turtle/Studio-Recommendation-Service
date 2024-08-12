@@ -6,14 +6,13 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 
 
-
 def get_Redshift_connection(autocommit=True):
     hook = PostgresHook(postgres_conn_id='redshift_conn')  # redshift_dev_db
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
 
-# production db
+# production db - mysql
 def get_RDS_connection(autocommit=True):
     hook = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
     conn = hook.get_conn()
