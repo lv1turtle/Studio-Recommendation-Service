@@ -146,7 +146,7 @@ with DAG(
         task_id='fetch_preprocessed_property_from_rds',
         python_callable=fetch_preprocessed_property_from_rds,
         op_kwargs={
-            "schema": "raw_data",
+            "schema": "production",
             "table": "property"
         }
     )
@@ -160,7 +160,7 @@ with DAG(
         task_id='update_predicted_status_in_rds',
         python_callable=update_predicted_status_in_rds,
         op_kwargs={
-            "schema": "raw_data",
+            "schema": "production",
             "table": "property"
         }
     )
