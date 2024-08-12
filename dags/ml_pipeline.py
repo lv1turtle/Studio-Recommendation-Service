@@ -169,7 +169,8 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
     cursor = get_RDS_connection()  
 
     query = f"""
-        SELECT * FROM (
+        SELECT *
+        FROM (
             SELECT room_id,
                 CASE
                     WHEN floor LIKE '%옥탑%' THEN '옥탑'
@@ -241,7 +242,7 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
     
     cursor.close()
 
-    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "facility_count", "status"]
+    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "facility_count"]
     df = pd.DataFrame(records, columns=columns)
 
     return df
