@@ -111,6 +111,7 @@ def extract_room_info(id, delay=2):
                 room_data["maintenance_fee"] = float(item_data["manageCost"]["amount"])
                 room_data["latitude"] = item_data["location"]["lat"]
                 room_data["longitude"] = item_data["location"]["lng"]
+                room_data["direction"] = item_data["roomDirection"]
                 room_data["address"] = item_data["jibunAddress"] if "jibunAddress" in item_data.keys() else item_data["addressOrigin"]["localText"]
                 room_data["property_link"] = "https://sp.zigbang.com/share/" + room_type_to_eng[item_data["serviceType"]] + "/" +str(item_data["itemId"])
 
@@ -170,6 +171,7 @@ def extract_room_info_include_facilities(id, delay=2):
                 room_data["maintenance_fee"] = float(item_data["manageCost"]["amount"])
                 room_data["latitude"] = item_data["location"]["lat"]
                 room_data["longitude"] = item_data["location"]["lng"]
+                room_data["direction"] = item_data["roomDirection"]
                 room_data["address"] = item_data["jibunAddress"] if "jibunAddress" in item_data.keys() else item_data["addressOrigin"]["localText"]
                 room_data["property_link"] = "https://sp.zigbang.com/share/" + room_type_to_eng[item_data["serviceType"]] + "/" +str(item_data["itemId"])
 
@@ -350,12 +352,12 @@ def insert_unsold_room_info(schema, table, load_schema, load_table):
         cursor.execute("BEGIN;")
         insert_sql = f"""
                 INSERT INTO {load_schema}.{load_table} (
-                room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                room_id, floor, area, deposit, rent, maintenance_fee, address, direction
                 market_count, store_count, subway_count, restaurant_count, cafe_count, 
                 hospital_count, status
                 )
                 SELECT 
-                    room_id, floor, area, deposit, rent, maintenance_fee, address, 
+                    room_id, floor, area, deposit, rent, maintenance_fee, address, direction
                     market_count, store_count, subway_count, restaurant_count, cafe_count, 
                     hospital_count, 1 AS status
                 FROM {schema}.{table} t
@@ -457,6 +459,7 @@ def alter_room_info(maintained_data, schema, table):
                         address VARCHAR(255),
                         latitude REAL,
                         longitude REAL,
+                        direction VARCHAR(50),
                         property_link VARCHAR(255),
                         registration_number VARCHAR(100),
                         agency_name VARCHAR(100),
@@ -470,15 +473,15 @@ def alter_room_info(maintained_data, schema, table):
             for record in maintained_data:
                 insert_sql = f"""
                     INSERT INTO {schema}.tmp (
-                        room_id, platform, room_type, service_type, title, description, floor, area, deposit, rent, maintenance_fee, latitude, longitude, address, 
-                        property_link, registration_number, agency_name, agent_name, image_link, update_at
+                        room_id, platform, room_type, service_type, title, description, floor, area, deposit, rent, maintenance_fee, latitude, longitude, direction,
+                        address, property_link, registration_number, agency_name, agent_name, image_link, update_at
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                 """
                 cursor.execute(insert_sql, (
                     record["room_id"], record["platform"], record["room_type"], record["service_type"], record["title"], record["description"], record["floor"], record["area"], record["deposit"], record["rent"], \
-                    record["maintenance_fee"], record["latitude"], record["longitude"], record["address"], record["property_link"], record["registration_number"],  \
+                    record["maintenance_fee"], record["latitude"], record["longitude"], record["direction"], record["address"], record["property_link"], record["registration_number"],  \
                     record["agency_name"], record["agent_name"], record["image_link"], record["update_at"]))
             
             join_sql = f"""
@@ -489,7 +492,7 @@ def alter_room_info(maintained_data, schema, table):
                     FROM {schema}.{table}
                 )
                 SELECT room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
-                        latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
+                        latitude, longitude, direction, address, property_link, registration_number, agency_name, agent_name, 
                         market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                         nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                         nearest_cafe_distance, hospital_count, nearest_hospital_distance, 
@@ -503,14 +506,14 @@ def alter_room_info(maintained_data, schema, table):
                 DELETE FROM {schema}.{table};
                 INSERT INTO {schema}.{table} (
                     room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
-                    latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
+                    latitude, longitude, direction, address, property_link, registration_number, agency_name, agent_name, 
                     market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                     nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link, update_at
                 )
                 SELECT 
                     room_id, platform, room_type, service_type, area, floor, deposit, rent, maintenance_fee, 
-                    latitude, longitude, address, property_link, registration_number, agency_name, agent_name, 
+                    latitude, longitude, direction, address, property_link, registration_number, agency_name, agent_name, 
                     market_count, nearest_market_distance, store_count, nearest_store_distance, subway_count, 
                     nearest_subway_distance, restaurant_count, nearest_restaurant_distance, cafe_count, 
                     nearest_cafe_distance, hospital_count, nearest_hospital_distance, title, description, image_link, update_at
