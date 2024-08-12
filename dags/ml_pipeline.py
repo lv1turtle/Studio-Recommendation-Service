@@ -268,7 +268,7 @@ def update_status_in_rds(df, schema, table):
 
         cursor.execute("BEGIN;")
 
-        for row in df.iterrows():
+        for _, row in df.iterrows():
             cursor.execute(update_query, (row["room_id"], row["status"]))
         
         cursor.execute("COMMIT;") 
