@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
 from imblearn.under_sampling import RandomUnderSampler
+from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.mysql.hooks.mysql import MySqlHook
@@ -144,7 +146,6 @@ def feature_encoding(df):
     return df_encoded
 
 
-
 # 판매완료, 미판매 데이터 개수를 맞추기 위한 랜덤 언더샘플링
 def perform_undersampling(df):
     X = df.drop(columns=['room_id', 'status'])
@@ -153,16 +154,52 @@ def perform_undersampling(df):
     rus = RandomUnderSampler(sampling_strategy='auto', random_state=42)
     X_resampled, y_resampled = rus.fit_resample(X, y)
 
-    return X_resampled, y_resampled
+    df_resampled = pd.concat([X_resampled, y_resampled], axis=1)
+
+    return df_resampled
 
 
-# random forest 모델 학습
-def train_randomforest(X, y):
+# random forest 모델 학습 및 accuracy 도출
+def train_randomforest(df):
+    X = df.drop(columns=['room_id', 'status'])
+    y = df['status']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
     clf = RandomForestClassifier()
-    clf.fit(X, y)
+    clf.fit(X_train, y_train)
 
-    return clf
+    y_pred = clf.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)\
+    
+    return clf, accuracy
 
+
+# redshift 테이블에 모델 학습 결과(accuracy) 적재
+def insert_accuracy_to_redshift(schema, table, execution_date, accuracy):
+    try:
+        cursor = get_RDS_connection()  
+        cursor.execute("BEGIN;")
+
+        query = f"""
+            INSERT INTO {schema}.{table} (
+                training_date, accuracy
+            ) VALUES (
+                %s, %s
+            )
+        """
+        
+        cursor.execute(query, (execution_date, accuracy))
+        cursor.execute("COMMIT;") 
+
+    except Exception as error:
+        print(error)
+        print("ROLLBACK")
+        cursor.execute("ROLLBACK;")
+        raise
+
+    finally:
+        cursor.close()
+    
 
 # RDS에서 데이터를 가져오면서 전처리 작업
 def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
