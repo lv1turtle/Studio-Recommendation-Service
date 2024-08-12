@@ -13,7 +13,7 @@ def get_Redshift_connection(autocommit=True):
     conn.autocommit = autocommit
     return conn.cursor()
 
-
+# production db
 def get_RDS_connection(autocommit=True):
     hook = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
     conn = hook.get_conn()
