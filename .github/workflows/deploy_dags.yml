@@ -59,4 +59,4 @@ jobs:
 
       - name: Update dags
         run: |
-          aws lambda invoke --function-name ${{ secrets.AWS_LAMBDA_FUNC }} --cli-connect-timeout 60
+          aws lambda invoke --function-name ${{ secrets.AWS_LAMBDA_FUNC }} --cli-connect-timeout 60 response.json
