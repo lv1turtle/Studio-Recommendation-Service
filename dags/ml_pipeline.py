@@ -229,7 +229,7 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
                     CASE WHEN market_count >= 1 THEN 1 ELSE 0 END +
                     CASE WHEN restaurant_count >= 1 THEN 1 ELSE 0 END +
                     CASE WHEN hospital_count >= 1 THEN 1 ELSE 0 END)
-                AS SMALLINT) AS facility_count
+                AS SIGNED) AS facility_count
             FROM {schema}.{table}
             WHERE district <> '기타' AND floor_level <> '기타'
         );
