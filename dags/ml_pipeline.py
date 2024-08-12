@@ -169,6 +169,7 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
     cursor = get_RDS_connection()  
 
     query = f"""
+        SELECT * FROM (
             SELECT room_id,
                 CASE
                     WHEN floor LIKE '%옥탑%' THEN '옥탑'
@@ -231,7 +232,8 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
                     CASE WHEN hospital_count >= 1 THEN 1 ELSE 0 END)
                 AS SIGNED) AS facility_count
             FROM {schema}.{table}
-            WHERE district <> '기타' AND floor_level <> '기타'
+        ) AS subquery
+        WHERE district <> '기타' AND floor_level <> '기타';
     """
     cursor.execute(query)
 
