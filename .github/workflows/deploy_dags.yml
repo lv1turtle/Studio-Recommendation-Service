@@ -1,0 +1,62 @@
+name: 'Build and upload to S3 Bucket & Deploy to EC2 with Lambda'
+
+# dags폴더 내로 PR 혹은 Push가 되면 trigger
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'dags/**'
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
+      - uses: actions/checkout@v3.3.0
+        with:
+          ref: develop
+      
+      # path-filter를 통해 dags폴더에 변화가 생겼을 시 trigger
+      - uses: dorny/paths-filter@v2.11.1
+        id: changes
+        with:
+          filters: |
+            dags:
+              - 'dags/**'
+
+      # AWS IAM 계정을 등록 (EC2FullAccess 필수)
+      # AWS CLI 사용을 위함
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Upload S3
+        run:
+          # aws cli로 dags 폴더에 있는 파일들을 S3로 업로드
+          # --delete : 원본 경로에서 삭제될 시 S3에서도 삭제
+          aws s3 sync --delete dags s3://${{ secrets.AWS_S3_BUCKET_NAME }}
+
+  deploy:
+    # 위의 S3 적재 과정이 완료된 후에 동작
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # AWS IAM 계정을 등록 (EC2FullAccess 필수)
+      # AWS CLI 사용을 위함
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Update dags
+        run: |
+          aws lambda invoke --function-name ${{ secrets.AWS_LAMBDA_FUNC }} --cli-connect-timeout 60
