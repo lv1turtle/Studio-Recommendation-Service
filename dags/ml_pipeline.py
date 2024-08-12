@@ -249,7 +249,7 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
 
 
 def predict_status(df, model):
-    X = df.drop(columns=['room_id', 'status'])
+    X = df.drop(columns=['room_id'])
     predictions = model.predict(X)
     df["status"] = predictions
 
