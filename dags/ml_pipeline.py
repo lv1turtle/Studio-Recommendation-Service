@@ -232,7 +232,6 @@ def fetch_preprocessed_data_from_rds(schema, table): # taw_data.property
                 AS SIGNED) AS facility_count
             FROM {schema}.{table}
             WHERE district <> '기타' AND floor_level <> '기타'
-        );
     """
     cursor.execute(query)
 
