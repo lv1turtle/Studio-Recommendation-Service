@@ -130,7 +130,7 @@ def fetch_preprocessed_data_from_redshift(schema, preprocessed_table):
 # 카테고리형 변수 인코딩
 def feature_encoding(df):
     # One-Hot Encoding을 위한 인코더 설정
-    one_hot_encoder = OneHotEncoder(sparse_output=False, drop='if_binary')
+    one_hot_encoder = OneHotEncoder(sparse=False, drop='if_binary')
     
     # 'floor_level'과 'district'을 한 번에 인코딩
     encoded_features = one_hot_encoder.fit_transform(df[['floor_level', 'district']])
