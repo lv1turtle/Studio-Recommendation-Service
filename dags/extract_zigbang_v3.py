@@ -207,15 +207,21 @@ def extract_nearest_all_facilities_info(lng, lat) -> dict:
         
         response = requests.get(KAKAOMAP_URL, params=params, headers=HEADERS)
 
-        request = response.json()
-        count = request['meta']['total_count']
-        if count > 0:
-            nearest_distance = int(request["documents"][0]["distance"])
-        else: 
-            nearest_distance = None
-        
-        data[CATEGORY_GROUP[category]["eng"]+"_count"] = count
-        data[f"nearest_"+CATEGORY_GROUP[category]["eng"]+"_distance"] = nearest_distance
+        try:
+            request = response.json()
+            count = request['meta']['total_count']
+            if count > 0:
+                nearest_distance = int(request["documents"][0]["distance"])
+            else: 
+                nearest_distance = None
+            
+            data[CATEGORY_GROUP[category]["eng"]+"_count"] = count
+            data[f"nearest_"+CATEGORY_GROUP[category]["eng"]+"_distance"] = nearest_distance
+        except KeyError as e:
+            print("Error:", request)
+            data[CATEGORY_GROUP[category]["eng"]+"_count"] = 0
+            data[f"nearest_"+CATEGORY_GROUP[category]["eng"]+"_distance"] = None
+            continue
 
     return data
 
