@@ -338,3 +338,6 @@ def update_status_in_rds(df, schema, table):
     
     finally:
         cursor.close()
+
+
+# EOF
