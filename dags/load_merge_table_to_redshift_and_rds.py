@@ -58,7 +58,8 @@ def load_dabang_data_to_external_from_s3(**context):
                                 nearest_restaurant_distance bigint,
                                 hospital_count bigint,
                                 nearest_hospital_distance bigint,
-                                image_link varchar(255)
+                                image_link varchar(255),
+                                direction varchar(50)
                                 )
                                 stored as parquet
                                 location '{uri}';"""
@@ -80,7 +81,7 @@ def load_merge_table_with_dabang_and_zigbang(**context):
         merge_table_query = f"""INSERT INTO {schema}.{table}
                                 WITH numbered_data AS (
                                     SELECT room_id, platform, service_type, title, floor, area, deposit, rent,
-                                    maintenance_fee, address, latitude, longitude, registration_number,
+                                    maintenance_fee, address, latitude, longitude, direction, registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
                                     market_count, nearest_market_distance, restaurant_count,
@@ -89,7 +90,19 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     ROW_NUMBER() OVER (PARTITION BY address, floor, deposit, rent, maintenance_fee ORDER BY room_id) AS rn
                                     FROM (
                                     SELECT room_id, platform, service_type, title, floor, area, deposit, rent,
-                                    maintenance_fee, address, latitude, longitude, registration_number,
+                                    maintenance_fee, address, latitude, longitude,
+                                    (CASE
+                                        WHEN direction = 'N' THEN '북'
+                                        WHEN direction = 'S' THEN '남'
+                                        WHEN direction = 'E' THEN '동'
+                                        WHEN direction = 'W' THEN '서'
+                                        WHEN direction = 'SE' THEN '남동'
+                                        WHEN direction = 'SW' THEN '남서'
+                                        WHEN direction = 'NE' THEN '북동'
+                                        WHEN direction = 'NW' THEN '북서'
+                                        ELSE NULL
+                                    END) as direction,
+                                    registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
                                     market_count, nearest_market_distance, restaurant_count,
@@ -100,7 +113,7 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     UNION ALL
                                 
                                     SELECT room_id, platform, service_type, title, floor, area, deposit, rent,
-                                    maintenance_fee, address, latitude, longitude, registration_number,
+                                    maintenance_fee, address, latitude, longitude, direction, registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
                                     market_count, nearest_market_distance, restaurant_count,
@@ -110,7 +123,7 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     )
                                 )
                                 SELECT room_id, platform, service_type, REPLACE(REPLACE(title, ',', '.'), '\n', '. ') AS title, floor, area, deposit, rent,
-                                    maintenance_fee, address, latitude, longitude, registration_number,
+                                    maintenance_fee, REPLACE(address, ',', ' '), latitude, longitude, direction, registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
                                     market_count, nearest_market_distance, restaurant_count,
@@ -239,5 +252,14 @@ trigger_create_transformed_and_analytics_tables = TriggerDagRunOperator(
     wait_for_completion=True
 )
 
+# daily_status_predict_to_rds DAG를 Trigger하기 위한 Task
+trigger_daily_status_predict_to_rds = TriggerDagRunOperator(
+    task_id="trigger_daily_status_predict_to_rds",
+    trigger_dag_id="daily_status_predict_to_rds",
+    execution_date="{{ ds }}",
+    reset_dag_run=True,
+    wait_for_completion=True
+)
+
 load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> trigger_create_transformed_and_analytics_tables
-load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds
+load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds >> trigger_daily_status_predict_to_rds
