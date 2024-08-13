@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import shutil
 import joblib
+import logging
 
 
 DEFAULT_DIR = '/opt/airflow/data/ml/'
@@ -35,7 +36,7 @@ def preprocessing_train_data(**context):
     df_encoded = ml_pipeline.feature_encoding(df)
     df_resampled = ml_pipeline.perform_undersampling(df_encoded)
 
-    print(f"학습 데이터 개수: {df.shape[0]}")
+    logging.info(f"데이터 개수: {df.shape[0]}")
 
     filepath_df = os.path.join(DEFAULT_DIR, "resampled_df.csv")
     df_resampled.to_csv(filepath_df, encoding="utf-8", index=False)
