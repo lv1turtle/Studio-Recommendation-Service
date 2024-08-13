@@ -100,7 +100,6 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                         WHEN direction = 'SW' THEN '남서'
                                         WHEN direction = 'NE' THEN '북동'
                                         WHEN direction = 'NW' THEN '북서'
-                                        ELSE NULL
                                     END) as direction,
                                     registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
@@ -123,7 +122,12 @@ def load_merge_table_with_dabang_and_zigbang(**context):
                                     )
                                 )
                                 SELECT room_id, platform, service_type, REPLACE(REPLACE(title, ',', '.'), '\n', '. ') AS title, floor, area, deposit, rent,
-                                    maintenance_fee, REPLACE(address, ',', ' '), latitude, longitude, direction, registration_number,
+                                    maintenance_fee, REPLACE(address, ',', ' '), latitude, longitude,
+                                    (CASE
+                                        WHEN direction not in ('동', '서', '남', '북', '남동', '남서', '북동', '북서') THEN ''
+                                        ELSE direction
+                                    END) as direction,
+                                    registration_number,
                                     agency_name, agent_name, subway_count, nearest_subway_distance,
                                     store_count, nearest_store_distance, cafe_count, nearest_cafe_distance,
                                     market_count, nearest_market_distance, restaurant_count,
