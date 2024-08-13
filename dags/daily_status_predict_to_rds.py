@@ -7,6 +7,8 @@ import pandas as pd
 import os
 import shutil
 import joblib
+import logging
+
 
 DEFAULT_DIR = '/opt/airflow/data/ml/'
 
@@ -32,34 +34,38 @@ def preprocessing_train_data(**context):
     df = pd.read_csv(filepath)
 
     df_encoded = ml_pipeline.feature_encoding(df)
-    X_train, y_train = ml_pipeline.perform_undersampling(df_encoded)
+    df_resampled = ml_pipeline.perform_undersampling(df_encoded)
 
-    print(f"학습 데이터 개수: {df.shape[0]}")
+    logging.info(f"데이터 개수: {df.shape[0]}")
 
-    filepath_X = os.path.join(DEFAULT_DIR, "X_train_data.csv")
-    filepath_y = os.path.join(DEFAULT_DIR, "y_train_data.csv")
+    filepath_df = os.path.join(DEFAULT_DIR, "resampled_df.csv")
+    df_resampled.to_csv(filepath_df, encoding="utf-8", index=False)
 
-    X_train.to_csv(filepath_X, encoding="utf-8", index=False)
-    y_train.to_csv(filepath_y, encoding="utf-8", index=False)
-
-    return {"X_train":filepath_X, "y_train":filepath_y}
+    return filepath_df
 
 
 # 머신러닝 모델 학습
 def train_ml(**context):
     filepath = context["task_instance"].xcom_pull(key="return_value", task_ids='preprocessing_train_data')
+    df_resampled = pd.read_csv(filepath)
 
-    # JSON 문자열을 DataFrame으로 변환
-    X_train = pd.read_csv(filepath["X_train"])
-    y_train = pd.read_csv(filepath["y_train"])
+    model, accuracy = ml_pipeline.train_randomforest(df_resampled)
     
-    model = ml_pipeline.train_randomforest(X_train, y_train)
-    
+    context["task_instance"].xcom_push(key="accuracy", value=accuracy)
+
     filepath_model = os.path.join(DEFAULT_DIR, "model.joblib")
     joblib.dump(model, filepath_model)
 
     return filepath_model
 
+
+# redshift 테이블에 모델 학습 결과(accuracy) 적재
+def insert_accuracy_to_redshift(schema, table, **context):
+    accuracy = context["task_instance"].xcom_pull(key="accuracy", task_ids='train_ml')
+    execution_date = context['execution_date'].strftime('%Y-%m-%d')
+
+    ml_pipeline.insert_accuracy_to_redshift(schema, table, execution_date, accuracy)
+    
 
 # RDS table에서 데이터 추출 및 원핫인코딩
 def fetch_preprocessed_property_from_rds(schema, table):
@@ -119,7 +125,7 @@ with DAG(
     dag_id='daily_status_predict_to_rds',
     start_date=datetime(2024, 7, 1),
     catchup=False,
-    schedule_interval='@once',
+    schedule_interval=None,
     default_args=default_args,
 ) as dag:
     fetch_transform_train_data = PythonOperator(
@@ -140,6 +146,15 @@ with DAG(
     train_ml = PythonOperator(
         task_id='train_ml',
         python_callable=train_ml
+    )
+
+    insert_accuracy_to_redshift = PythonOperator(
+        task_id='insert_accuracy_to_redshift',
+        python_callable=insert_accuracy_to_redshift,
+        op_kwargs={
+            "schema": "analytics",
+            "table": "model_accuracy"
+        }
     )
 
     fetch_preprocessed_property_from_rds = PythonOperator(
@@ -170,4 +185,6 @@ with DAG(
         python_callable=clear_directory
     )
 
-    fetch_transform_train_data >> preprocessing_train_data >> train_ml >> fetch_preprocessed_property_from_rds >> predict_status >> update_predicted_status_in_rds >> clear_directory
+    fetch_transform_train_data >> preprocessing_train_data >> train_ml >> insert_accuracy_to_redshift >> fetch_preprocessed_property_from_rds >> predict_status >> update_predicted_status_in_rds >> clear_directory
+
+# EOF
