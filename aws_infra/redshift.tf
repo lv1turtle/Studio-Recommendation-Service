@@ -1,0 +1,16 @@
+resource "aws_redshift_cluster" "team-ariel-1-redshift-cluster" {
+    cluster_identifier                  = "team-ariel-1-redshift-cluster"
+    database_name                       = "dev"
+    cluster_type                        = "single-node"
+    node_type                           = "dc2.large"
+    master_password                     = "xxxxxxxx"
+    master_username                     = "ariel"
+    availability_zone                   = "ap-northeast-2d"
+    cluster_parameter_group_name        = "default.redshift-1.0"
+    automated_snapshot_retention_period = "1"
+    port                                = "5439"
+    cluster_version                     = "1.0"
+    allow_version_upgrade               = "true"
+    number_of_nodes                     = "1"
+    publicly_accessible                 = "true"
+}
