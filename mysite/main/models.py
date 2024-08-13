@@ -88,6 +88,7 @@ class Property(models.Model):
     nearest_hospital_distance = models.IntegerField()
     image_link = models.CharField(max_length=500)
     status = models.IntegerField()
+    direction = models.CharField(max_length=50,null=True)
 
     class Meta:
         managed = False

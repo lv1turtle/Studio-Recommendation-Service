@@ -307,6 +307,12 @@ class PropertyDataFilteringView(APIView):
                     default=Value(0),
                     output_field=IntegerField(),
                 ),
+                direction_score=Case(
+                    When(direction__in=['남','남서','남동'], then=Value(3)),
+                    When(direction__in=['북','서','북동','북서'], then=Value(-3)),
+                    When(direction__in=['동'], then=Value(0)),
+                    output_field=IntegerField(),
+                )
             )
 
             # 편의시설 점수 합계 계산
@@ -317,6 +323,7 @@ class PropertyDataFilteringView(APIView):
                 + F("cafe_distance_score")
                 + F("subway_score")
                 + F("hospital_score")
+                + F("direction_score")
             )
 
             # 월 지출비 계산
