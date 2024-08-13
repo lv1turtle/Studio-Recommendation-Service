@@ -125,14 +125,15 @@ def process_rooms(room_list):
         cafe = extract_nearest_facilities_info(lng, lat, "카페", 987)
         hospital = extract_nearest_facilities_info(lng, lat, "병원", 946)
 
-        # 주소 받아오기
+        # 주소
         address_url = f"https://www.dabangapp.com/api/3/room/near?api_version=3.0.1&call_type=web&room_id={id}&version=1"
         response = requests.get(address_url, headers=dabang_headers)
         if response.status_code == 200:
             data = response.json()
+            print(data)
             address = data.get("address")
 
-        # 부동산 정보 받아오기
+        # 상세 정보
         registration_url = f"https://www.dabangapp.com/api/3/new-room/detail?api_version=3.0.1&call_type=web&room_id={id}&version=1"
         response = requests.get(registration_url, headers=dabang_headers)
         if response.status_code == 200:
@@ -140,6 +141,7 @@ def process_rooms(room_list):
             registration_name = data.get("agent").get("name")
             agent_name = data.get("agent").get("facename")
             registration_number = data.get("agent").get("reg_id")
+            direction = data.get("room").get("direction_str")
         else:
             print(f"Request failed with status code {response.status_code}")
 
@@ -175,6 +177,7 @@ def process_rooms(room_list):
                 "hospital_count": hospital.get("count"),
                 "nearest_hospital_distance": hospital.get("nearest_distance"),
                 "image_link": img_url,
+                "direction": direction,
             }
         )
     return data_for_parquet
