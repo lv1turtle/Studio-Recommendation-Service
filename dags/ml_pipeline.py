@@ -148,7 +148,7 @@ def feature_encoding(df):
 
 # 판매완료, 미판매 데이터 개수를 맞추기 위한 랜덤 언더샘플링
 def perform_undersampling(df):
-    X = df.drop(columns=['room_id', 'status'])
+    X = df.drop(columns=['status'])
     y = df['status']
 
     rus = RandomUnderSampler(sampling_strategy='auto', random_state=42)
@@ -177,7 +177,7 @@ def train_randomforest(df):
 # redshift 테이블에 모델 학습 결과(accuracy) 적재
 def insert_accuracy_to_redshift(schema, table, execution_date, accuracy):
     try:
-        cursor = get_RDS_connection()  
+        cursor = get_Redshift_connection()  
         cursor.execute("BEGIN;")
 
         query = f"""
