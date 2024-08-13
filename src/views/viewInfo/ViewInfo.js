@@ -131,9 +131,10 @@ const ViewInfo = () => {
                 <div className={style.line}><b>평수</b><p>{data[currentPage].area}m²/
                   약{(data[currentPage].area / 3.31).toFixed(1)}평</p></div>
                 <div className={style.line}><b>층</b> <p>{data[currentPage].floor}</p></div>
+                {data[currentPage].direction.length > 0 && (<div className={style.line}><b>방향</b> <p>{data[currentPage].direction}향</p></div>)}
                 <div className={style.line}><b>주소</b> <p>{data[currentPage].address}</p></div>
                 <div className={style.line}><b>매물 링크</b> <a target="_blank"
-                                                            href={data[currentPage].property_link}>{data[currentPage].property_link}</a>
+                  href={data[currentPage].property_link}>{data[currentPage].property_link}</a>
                 </div>
                 {data[currentPage].status === 0 && (<div className={style.line}><b>AI의 분석 결과</b><p>판매 가능성이 높은 매물이에요!</p></div>)}
                 
@@ -194,7 +195,7 @@ const ViewInfo = () => {
             </div>
           ) : (
             <div className={style.card}>
-                <p>해당하는 매물이 없습니다!</p>
+                <p>해당하는 매물이 없거나 잘못된 주소 입력입니다 !</p>
                 <p>다시 검색해 주세요.</p>
                 <div className={style["logo"]}><Link to="/">돌아가기</Link></div>
             </div>

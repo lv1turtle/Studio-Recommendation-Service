@@ -38,7 +38,7 @@ const GetAddress = () => {
             <div className={style.tip}>
               <p>tip</p>
               <p>아래와 같은 조합으로 검색하시면 됩니다.</p>
-              <p>oo역, oo동, oo구</p>
+              <p>군자동, 서초구, 잠실</p>
             </div>
           </div>
         </main>
