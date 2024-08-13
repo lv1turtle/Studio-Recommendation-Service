@@ -94,6 +94,7 @@ def preprocessing_redshift_sold_table(schema, raw_table, preprocessed_table): # 
                         WHEN address LIKE '%중랑구%' THEN '중랑구'
                         ELSE '기타'
                     END AS district,
+                    direction,
                     CAST(
                     (CASE WHEN subway_count >= 1 THEN 1 ELSE 0 END +
                     CASE WHEN store_count >= 1 THEN 1 ELSE 0 END +
@@ -135,7 +136,7 @@ def fetch_preprocessed_data_from_redshift(schema, preprocessed_table):
     finally:
         cursor.close()
 
-    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "facility_count", "status"]
+    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "direction", "facility_count", "status"]
     df = pd.DataFrame(records, columns=columns)
 
     return df
@@ -147,13 +148,13 @@ def feature_encoding(df):
     one_hot_encoder = OneHotEncoder(sparse=False, drop='if_binary')
     
     # 'floor_level'과 'district'을 한 번에 인코딩
-    encoded_features = one_hot_encoder.fit_transform(df[['floor_level', 'district']])
+    encoded_features = one_hot_encoder.fit_transform(df[['floor_level', 'district', 'direction']])
     
     # 인코딩된 데이터프레임 생성
     df_encoded = pd.DataFrame(encoded_features, columns=one_hot_encoder.get_feature_names_out())
     
     # 원래 데이터프레임에서 인코딩할 컬럼 제거
-    df_encoded = pd.concat([df.drop(columns=['floor_level', 'district']), df_encoded], axis=1)
+    df_encoded = pd.concat([df.drop(columns=['floor_level', 'district', 'direction']), df_encoded], axis=1)
 
     return df_encoded
 
@@ -278,6 +279,7 @@ def fetch_preprocessed_data_from_rds(schema, table):
                         WHEN address LIKE '%중랑구%' THEN '중랑구'
                         ELSE '기타'
                     END AS district,
+                    direction,
                     CAST(
                         (CASE WHEN subway_count >= 1 THEN 1 ELSE 0 END +
                         CASE WHEN store_count >= 1 THEN 1 ELSE 0 END +
@@ -300,7 +302,7 @@ def fetch_preprocessed_data_from_rds(schema, table):
     finally:
         cursor.close()
 
-    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "facility_count"]
+    columns = ["room_id", "floor_level", "area", "deposit", "rent", "maintenance_fee", "district", "direction", "facility_count"]
     df = pd.DataFrame(records, columns=columns)
 
     return df
