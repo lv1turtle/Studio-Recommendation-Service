@@ -54,8 +54,9 @@ def update_to_redshift(**context):
     maintained_data = extract_zigbang_v3.get_maintained_data(room_data, ids_to_add)
     extract_zigbang_v3.alter_room_info(maintained_data, schema, table)
 
-# 추가해야 할 매물 데이터들을 S3에 적재 (agent_data와 결합하기 위함)
+# 추가해야 할 매물 데이터들을 S3에 적재 (agent_data와 결합하기 위함) 후 매물 데이터 삭제
 def load_to_s3(**context):
+    import os
     filename = context["params"]["filename"]
     key = context["params"]["key"]
     bucket_name = context["params"]["bucket_name"]
@@ -76,10 +77,7 @@ def load_to_s3(**context):
                     key=key,
                     bucket_name=bucket_name,
                     replace=True)
-
-
-def clear_data(filename: str) -> None:
-    import os
+    
     os.remove(filename)
 
 
@@ -113,13 +111,7 @@ with DAG('zigbang_update',
                 'bucket_name': S3_BUCKET_NAME
             }
     )
-    clear_data = PythonOperator(
-        task_id='clear_data',
-        python_callable=clear_data,
-        op_kwargs={
-                    'filename': '/opt/airflow/data/zigbang.parquet'
-                }
-    )
+
     load_zigbang_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id = "load_zigbang_data_to_redshift_from_s3",
         s3_bucket = S3_BUCKET_NAME,	# 데이터를 가져오는 S3 bucket 이름
@@ -133,4 +125,4 @@ with DAG('zigbang_update',
     )
 
 
-fetch_room_data >> update_to_redshift >> load_to_s3 >> clear_data >> load_zigbang_data_to_redshift_from_s3
+fetch_room_data >> update_to_redshift >> load_to_s3 >> load_zigbang_data_to_redshift_from_s3
