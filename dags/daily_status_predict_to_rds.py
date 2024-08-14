@@ -64,8 +64,9 @@ def insert_accuracy_to_redshift(schema, table, **context):
     accuracy = context["task_instance"].xcom_pull(key="accuracy", task_ids='train_ml')
     execution_date = context['execution_date'].strftime('%Y-%m-%d')
 
+    logging.info(f"accuracy : {accuracy}")
     ml_pipeline.insert_accuracy_to_redshift(schema, table, execution_date, accuracy)
-    
+
 
 # RDS table에서 데이터 추출 및 원핫인코딩
 def fetch_preprocessed_property_from_rds(schema, table):
