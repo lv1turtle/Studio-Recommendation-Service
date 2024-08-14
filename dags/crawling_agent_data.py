@@ -27,10 +27,8 @@ def transform(download_path):
     return paths
 
 
-# 다운로드 받은 데이터를 S3에 적재 후 다운로드 받은 데이터 삭제
+# 다운로드 받은 데이터를 S3에 적재
 def load_csv_to_s3(**context):
-    import os
-    import shutil
     paths = context["task_instance"].xcom_pull(key="return_value", task_ids='transform')
     bucket_name = context["params"]["bucket_name"]
 
@@ -39,7 +37,14 @@ def load_csv_to_s3(**context):
                     key=paths["s3_url"],
                     bucket_name=bucket_name,
                     replace=True)
-    
+
+
+# 다운로드 받은 파일을 삭제
+def clear_data(**context):
+    import os
+    import shutil
+    paths = context["task_instance"].xcom_pull(key="return_value", task_ids='transform')
+
     os.remove(paths["zip_filepath"])
     shutil.rmtree(paths["extract_dir"])
 
@@ -113,6 +118,11 @@ with DAG(
         }
     )
 
+    clear_data = PythonOperator(
+        task_id='clear_data',
+        python_callable=clear_data
+    )
+
     load_agent_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id="load_agent_data_to_redshift_from_s3",
         s3_bucket=S3_BUCKET_NAME,
@@ -135,4 +145,4 @@ with DAG(
         }
     )
 
-    download_data >> transform >> load_csv_to_s3 >> load_agent_data_to_redshift_from_s3 >> load_agent_data_to_rds
+    download_data >> transform >> load_csv_to_s3 >> clear_data >> load_agent_data_to_redshift_from_s3 >> load_agent_data_to_rds

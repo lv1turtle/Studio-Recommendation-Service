@@ -14,12 +14,17 @@ def fetch_data():
 
 
 def upload_to_s3(filename: str, key: str, bucket_name: str) -> None:
-    import os
     hook = S3Hook("s3_conn")
     hook.load_file(
         filename=filename, key=key, bucket_name=bucket_name, replace=True
     )
+
+
+def clear_data(filename: str) -> None:
+    import os
+
     os.remove(filename)
+
 
 with DAG(
     "dabang_upload_to_s3",
@@ -48,5 +53,9 @@ with DAG(
             "bucket_name": "team-ariel-1-bucket",
         },
     )
-
-fetch >> overwrite_upload >> save_upload
+    clear = PythonOperator(
+        task_id="clear_data",
+        python_callable=clear_data,
+        op_kwargs={"filename": "/opt/airflow/data/dabang.parquet"},
+    )
+fetch >> overwrite_upload >> save_upload >> clear
