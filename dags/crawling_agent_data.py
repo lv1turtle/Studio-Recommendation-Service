@@ -103,7 +103,7 @@ with DAG(
     load_agent_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id="load_agent_data_to_redshift_from_s3",
         s3_bucket=S3_BUCKET_NAME,
-        s3_key="{{ task_instance.xcom_pull(task_ids='transform_and_upload_csv_to_s3') }}",
+        s3_key="{{ task_instance.xcom_pull(key='return_value', task_ids='transform_and_upload_csv_to_s3') }}",
         schema="raw_data",
         table="agency_details",
         copy_options=['csv', 'IGNOREHEADER 1'],
