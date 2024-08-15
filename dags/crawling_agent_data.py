@@ -6,53 +6,54 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 
 from datetime import datetime
+import logging
 import os
 
 S3_BUCKET_NAME = "team-ariel-1-bucket"
-DOWNLOAD_PATH = "/opt/airflow/data/agent/"
+S3_DATA_DIR = "data/"
+S3_AGENT_DIR = "agent/"
+DOWNLOAD_DIR = "/opt/airflow/data/"
 
 # agent 데이터를 다운로드
-def download_data(download_path):
-    agent_data_to_s3.set_download_directory(download_path)
-    agent_data_to_s3.download_agent_data(download_path)
-
-
-# agent 데이터 columns 변환
-def transform(download_path):
-    paths = agent_data_to_s3.get_csv_file_path(download_path)
-    paths["s3_url"] = "agent/" + paths["csv_filename"]
-
-    agent_data_to_s3.transform_columns(paths["csv_filepath"])
-
-    return paths
-
-
-# 다운로드 받은 데이터를 S3에 적재 후 다운로드 받은 데이터 삭제
-def load_csv_to_s3(**context):
-    import os
+def download_data():
     import shutil
-    paths = context["task_instance"].xcom_pull(key="return_value", task_ids='transform')
-    bucket_name = context["params"]["bucket_name"]
 
-    hook = S3Hook('s3_conn')
-    hook.load_file(filename=paths["csv_filepath"],
-                    key=paths["s3_url"],
-                    bucket_name=bucket_name,
-                    replace=True)
-    
+    agent_data_to_s3.download_agent_data(DOWNLOAD_DIR)
+    logging.info("Finished download file from vworld")
+
+    paths = agent_data_to_s3.get_csv_file_path(DOWNLOAD_DIR)
+
+    filename = paths["csv_filename"]
+    key = os.path.join(S3_DATA_DIR, paths["csv_filename"])
+
+    agent_data_to_s3.upload_s3_and_remove(paths["csv_filepath"], key)
+
     os.remove(paths["zip_filepath"])
     shutil.rmtree(paths["extract_dir"])
 
+    return filename, key
+
+
+# agent 데이터 columns 변환 및 s3에 적재
+def transform_and_upload_csv_to_s3(**context):
+    filename, data_key = context["task_instance"].xcom_pull(key="return_value", task_ids='download_data')
+    agent_data_to_s3.download_file_from_s3(data_key, DOWNLOAD_DIR)
+
+    local_filepath = os.path.join(DOWNLOAD_DIR, filename)
+    agent_data_to_s3.transform_columns(local_filepath)
+
+    agent_key = os.path.join(S3_AGENT_DIR, filename)
+    agent_data_to_s3.upload_s3_and_remove(local_filepath, agent_key)
+
+    return agent_key
+
 
 # s3에 적재한 데이터를 redshift에 적재
-def load_agent_data_to_rds(**context):
-    schema = context["params"]["schema"]
-    table = context["params"]["table"]
-    key = context["ti"].xcom_pull(task_ids='transform')['s3_url']
-    bucket_name = context["params"]["bucket_name"]
+def load_agent_data_to_rds_from_s3(schema, table, **context):
+    key = context["task_instance"].xcom_pull(key="return_value", task_ids='transform_and_upload_csv_to_s3')
     
     s3_hook = S3Hook(aws_conn_id= 's3_conn')
-    file = s3_hook.download_file(key=key, bucket_name=bucket_name)
+    file = s3_hook.download_file(key=key, bucket_name=S3_BUCKET_NAME)
     try:
         mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
         conn = mysql.get_conn()
@@ -91,32 +92,18 @@ with DAG(
 
     download_data = PythonOperator(
         task_id='download_data',
-        python_callable=download_data,
-        op_kwargs={
-            "download_path": DOWNLOAD_PATH
-        }
+        python_callable=download_data
     )
 
-    transform = PythonOperator(
-        task_id='transform',
-        python_callable=transform,
-        op_kwargs={
-            "download_path": DOWNLOAD_PATH
-        }
-    )
-
-    load_csv_to_s3 = PythonOperator(
-        task_id='load_csv_to_s3',
-        python_callable=load_csv_to_s3,
-        params={
-            "bucket_name": S3_BUCKET_NAME
-        }
+    transform_and_upload_csv_to_s3 = PythonOperator(
+        task_id='transform_and_upload_csv_to_s3',
+        python_callable=transform_and_upload_csv_to_s3
     )
 
     load_agent_data_to_redshift_from_s3 = S3ToRedshiftOperator(
         task_id="load_agent_data_to_redshift_from_s3",
         s3_bucket=S3_BUCKET_NAME,
-        s3_key="{{ task_instance.xcom_pull(task_ids='transform')['s3_url'] }}",
+        s3_key="{{ task_instance.xcom_pull(task_ids='transform_and_upload_csv_to_s3') }}",
         schema="raw_data",
         table="agency_details",
         copy_options=['csv', 'IGNOREHEADER 1'],
@@ -125,14 +112,16 @@ with DAG(
         method="REPLACE"
     )
 
-    load_agent_data_to_rds = PythonOperator(
-        task_id='load_agent_data_to_rds',
-        python_callable=load_agent_data_to_rds,
-        params={
+    load_agent_data_to_rds_from_s3 = PythonOperator(
+        task_id='load_agent_data_to_rds_from_s3',
+        python_callable=load_agent_data_to_rds_from_s3,
+        op_kwargs={
             "schema": "production",
-            "table": "agency_details",
-            "bucket_name": S3_BUCKET_NAME
+            "table": "agency_details"
         }
     )
 
-    download_data >> transform >> load_csv_to_s3 >> load_agent_data_to_redshift_from_s3 >> load_agent_data_to_rds
+    download_data >> transform_and_upload_csv_to_s3 >> load_agent_data_to_redshift_from_s3 >> load_agent_data_to_rds_from_s3
+
+
+# EOF
