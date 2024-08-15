@@ -44,8 +44,10 @@ jobs:
           # script 중간에 실패하는 순간 뒤에 있는 script는 실행하지 않음
           script_stop: true
           script: |
+            sudo systemctl stop django
             cd webserver/Server
             git pull origin Server
+            sudo systemctl start django
 
       # AWS CLI로 보안그룹에 등록했던 Github Actions의 IP를 제거
       - name: Remove Github Actions IP From Security Group
