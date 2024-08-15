@@ -18,18 +18,22 @@ DOWNLOAD_DIR = "/opt/airflow/data/"
 def download_data():
     import shutil
     
+    # 브이월드에서 DOWNLOAD_DIR 폴더로 데이터 다운로드 
     logging.info(f"Start download file from vworld : {DOWNLOAD_DIR}")
     agent_data_to_s3.download_agent_data(DOWNLOAD_DIR)
     logging.info("Finished download file from vworld")
 
+    # 다운로드 받은 zip 파일 찾아 압축 풀고, 그 안의 csv 파일 경로 찾기
     paths = agent_data_to_s3.get_csv_file_path(DOWNLOAD_DIR)
 
-    filename = paths["csv_filename"]
-    key = os.path.join(S3_DATA_DIR, paths["csv_filename"])
+    # csv 파일 S3에 업로드하고, 삭제
+    filename = paths["csv_filename"]    # csv 파일명
+    key = os.path.join(S3_DATA_DIR, paths["csv_filename"])   # S3 경로 (임시로 저장하므로 data 폴더에 저장)
     agent_data_to_s3.upload_s3_and_remove(paths["csv_filepath"], key)
     
     logging.info("local -> s3 : %s -> %s", paths["csv_filepath"], key)
 
+    # zip 파일, 압축 해제한 폴더 삭제
     os.remove(paths["zip_filepath"])
     shutil.rmtree(paths["extract_dir"])
 
@@ -39,15 +43,18 @@ def download_data():
 # agent 데이터 columns 변환 및 s3에 적재
 def transform_and_upload_csv_to_s3(**context):
     filename, data_key = context["task_instance"].xcom_pull(key="return_value", task_ids='download_data')
-    local_filepath = os.path.join(DOWNLOAD_DIR, filename)
+    local_filepath = os.path.join(DOWNLOAD_DIR, filename)   # 로컬에 저장될 파일 경로
 
+    # S3에서 파일 다운로드
     agent_data_to_s3.download_file_from_s3(data_key, DOWNLOAD_DIR)
 
     logging.info(f"s3 -> local : {data_key} -> {local_filepath}")
 
+    # 컬렴명 변환, 필요한 컬럼 선택. 그리고 csv 인코딩 설정을 utf-8로 설정해 파일 덮어쓰기
     agent_data_to_s3.transform_columns(local_filepath)
 
-    agent_key = os.path.join(S3_AGENT_DIR, filename)
+    # csv 파일 S3에 업로드하고, 삭제
+    agent_key = os.path.join(S3_AGENT_DIR, filename)   # Redshift, RDS에 적재될 데이터이므로 agent 폴더에 저장
     agent_data_to_s3.upload_s3_and_remove(local_filepath, agent_key)
     
     logging.info(f"s3 -> local : {local_filepath} -> {agent_key}")
