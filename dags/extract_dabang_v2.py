@@ -130,7 +130,6 @@ def process_rooms(room_list):
         response = requests.get(address_url, headers=dabang_headers)
         if response.status_code == 200:
             data = response.json()
-            print(data)
             address = data.get("address")
 
         # 상세 정보
@@ -246,8 +245,9 @@ def get_data_by_range(start, end):
             cnt += len(room_list)
         else:
             break
-    save_to_parquet(data_for_parquet, "/opt/airflow/data/dabang.parquet")
-
+    file_path = "/opt/airflow/data/dabang.parquet"
+    save_to_parquet(data_for_parquet, file_path)
+    return file_path
 
 def get_data_all():
     cnt = 0
@@ -256,7 +256,6 @@ def get_data_all():
     while True:
 
         room_list = fetch_rooms(dabang_base_url, page)
-        print(f"{page}페이지 방 정보 가져오는 중")
 
         if room_list:
             processed_data = process_rooms(room_list)
@@ -266,5 +265,7 @@ def get_data_all():
         else:
             print("No more rooms found. Exiting.")
             break
-    save_to_parquet(data_for_parquet, "/opt/airflow/data/dabang.parquet")
+    file_path = "/opt/airflow/data/dabang.parquet"
+    save_to_parquet(data_for_parquet, file_path)
     print(f"총 개수: {cnt}")
+    return file_path
