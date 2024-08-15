@@ -3,9 +3,7 @@ import ml_pipeline
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
-import pandas as pd
 import logging
-import joblib
 
 
 # redshift 에서 전처리 테이블 생성 후 데이터를 가져와 DataFrame으로 변환
@@ -13,40 +11,38 @@ def fetch_transform_train_data(schema, raw_table, preprocessed_table):
     ml_pipeline.preprocessing_redshift_sold_table(schema, raw_table, preprocessed_table)
     df = ml_pipeline.fetch_preprocessed_data_from_redshift(schema, preprocessed_table)
 
-    filepath, key = ml_pipeline.upload_dataframe_to_s3(df, "train_data.csv")
+    key = ml_pipeline.upload_dataframe_to_s3(df, "train_data.csv")
 
-    return filepath, key
+    return key
     
 
 # 학습 데이터 원핫인코딩, 언더샘플링 진행
 def preprocessing_train_data(**context):
-    filepath, key = context["task_instance"].xcom_pull(key="return_value", task_ids='fetch_transform_train_data')
-    ml_pipeline.download_file_from_s3(key, ml_pipeline.DEFAULT_DIR)
-    df = pd.read_csv(filepath)
+    key = context["task_instance"].xcom_pull(key="return_value", task_ids='fetch_transform_train_data')
+    df = ml_pipeline.read_csv_and_remove(key, ml_pipeline.DEFAULT_DIR)
 
     df_encoded = ml_pipeline.feature_encoding(df)
     df_resampled = ml_pipeline.perform_undersampling(df_encoded)
 
     logging.info(f"데이터 개수: {df.shape[0]}")
 
-    filepath_df, key = ml_pipeline.upload_dataframe_to_s3(df_resampled, "resampled_df.csv")
+    key = ml_pipeline.upload_dataframe_to_s3(df_resampled, "resampled_df.csv")
 
-    return filepath_df, key
+    return key
 
 
 # 머신러닝 모델 학습
 def train_ml(**context):
-    filepath, key = context["task_instance"].xcom_pull(key="return_value", task_ids='preprocessing_train_data')
-    ml_pipeline.download_file_from_s3(key, ml_pipeline.DEFAULT_DIR)
-    df_resampled = pd.read_csv(filepath)
+    key = context["task_instance"].xcom_pull(key="return_value", task_ids='preprocessing_train_data')
+    df_resampled = ml_pipeline.read_csv_and_remove(key, ml_pipeline.DEFAULT_DIR)
 
     model, accuracy = ml_pipeline.train_randomforest(df_resampled)
     
     context["task_instance"].xcom_push(key="accuracy", value=accuracy)
 
-    filepath_model, key = ml_pipeline.upload_model_to_s3(model, "model.joblib")
+    key = ml_pipeline.upload_model_to_s3(model, "model.joblib")
 
-    return filepath_model, key
+    return key
 
 
 # redshift 테이블에 모델 학습 결과(accuracy) 적재
@@ -63,33 +59,30 @@ def fetch_preprocessed_property_from_rds(schema, table):
     df = ml_pipeline.fetch_preprocessed_data_from_rds(schema, table)
     df_encoded = ml_pipeline.feature_encoding(df)
     
-    filepath, key = ml_pipeline.upload_dataframe_to_s3(df_encoded, "rds_data.csv")
+    key = ml_pipeline.upload_dataframe_to_s3(df_encoded, "rds_data.csv")
 
-    return filepath, key
+    return key
 
 
 # 머신러닝 모델에서 예측된 status 추출
 def predict_status(**context):
-    filepath_data, key = context["task_instance"].xcom_pull(key="return_value", task_ids='fetch_preprocessed_property_from_rds')
-    ml_pipeline.download_file_from_s3(key, ml_pipeline.DEFAULT_DIR)
-    df = pd.read_csv(filepath_data)
+    df_key = context["task_instance"].xcom_pull(key="return_value", task_ids='fetch_preprocessed_property_from_rds')
+    df = ml_pipeline.read_csv_and_remove(df_key, ml_pipeline.DEFAULT_DIR)
 
-    filepath_model, key = context["task_instance"].xcom_pull(key="return_value", task_ids='train_ml')
-    ml_pipeline.download_file_from_s3(key, ml_pipeline.DEFAULT_DIR)
-    model = joblib.load(filepath_model)
+    model_key = context["task_instance"].xcom_pull(key="return_value", task_ids='train_ml')
+    model = ml_pipeline.read_model_and_remove(model_key, ml_pipeline.DEFAULT_DIR)
 
     predict_df = ml_pipeline.predict_status(df, model)
 
     filepath, key = ml_pipeline.upload_dataframe_to_s3(predict_df, "predict_data.csv")
 
-    return filepath, key
+    return key
 
 
 # RDS table에 status 값 update
 def update_predicted_status_in_rds(schema, table, **context):
-    filepath, key = context["task_instance"].xcom_pull(key="return_value", task_ids='predict_status')
-    ml_pipeline.download_file_from_s3(key, ml_pipeline.DEFAULT_DIR)
-    df = pd.read_csv(filepath)
+    key = context["task_instance"].xcom_pull(key="return_value", task_ids='predict_status')
+    df = ml_pipeline.read_csv_and_remove(key, ml_pipeline.DEFAULT_DIR)
     
     ml_pipeline.update_status_in_rds(df, schema, table)
 
