@@ -9,20 +9,32 @@ x-airflow-common:
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    # Airflow webserver의 varaibles,connections 등의 Metadata를 저장하는 DB
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@rds_endpoint:5432/airflow
     # For backward compatibility, with Airflow <2.3
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@rds_endpoint:5432/airflow
+    # Celery Executor의 task state를 기록하여 다수의 Worker로 분산 처리를 가능하게 해주는 DB
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@rds_endpoint:5432/airflow
+    # Worker가 가져갈 수 있도록 task들을 담아두는 Queue
     AIRFLOW__CELERY__BROKER_URL: redis://redis_endpoint:6379/0
+    # log들을 S3에 원격으로 연결
+    AIRFLOW__CORE__REMOTE_LOGGING: 'true'
+    AIRFLOW__CORE__REMOTE_LOG_CONN_ID: s3_conn
+    AIRFLOW__CORE__REMOTE_BASE_LOG_FOLDER: s3://s3_bucket_name
+    # DB 암호화
     AIRFLOW__CORE__FERNET_KEY: '...'
+    # DAG 생성 중에는 정지
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    # DAG 예제 생성 X
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    # 실험적인 부분으로 사용을 권장하지 않음 -> pip install을 쉽게 해주는 환경 변수
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    # DAGs의 임시 파일 저장소
     - ${AIRFLOW_PROJ_DIR:-.}/data:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
 
