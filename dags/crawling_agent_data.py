@@ -51,18 +51,20 @@ def transform_and_upload_csv_to_s3(**context):
     logging.info(f"s3 -> local : {data_key} -> {local_filepath}")
 
     # 컬렴명 변환, 필요한 컬럼 선택. 그리고 csv 인코딩 설정을 utf-8로 설정해 파일 덮어쓰기
-    agent_data_to_s3.transform_columns(local_filepath)
+    new_filepath = agent_data_to_s3.transform_columns(local_filepath)
 
     # csv 파일 S3에 업로드하고, 삭제
-    agent_key = os.path.join(S3_AGENT_DIR, filename)   # Redshift, RDS에 적재될 데이터이므로 agent 폴더에 저장
-    agent_data_to_s3.upload_s3_and_remove(local_filepath, agent_key)
+    agent_key = os.path.join(S3_AGENT_DIR, os.path.basename(new_filepath))   # Redshift, RDS에 적재될 데이터이므로 agent 폴더에 저장
+    agent_data_to_s3.upload_s3_and_remove(new_filepath, agent_key)
+
+    os.remove(local_filepath)
     
-    logging.info(f"s3 -> local : {local_filepath} -> {agent_key}")
+    logging.info(f"s3 -> local : {new_filepath} -> {agent_key}")
 
     return agent_key
 
 
-# s3에 적재한 데이터를 redshift에 적재
+# s3에 적재한 데이터를 rds에 적재
 def load_agent_data_to_rds_from_s3(schema, table, **context):
     key = context["task_instance"].xcom_pull(key="return_value", task_ids='transform_and_upload_csv_to_s3')
     
