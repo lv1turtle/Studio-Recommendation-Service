@@ -209,7 +209,7 @@ def feature_encoding(df):
     ]
 
     # One-Hot Encoding을 위한 인코더 설정
-    one_hot_encoder = OneHotEncoder(categories=categories, sparse_output=False, handle_unknown='ignore')
+    one_hot_encoder = OneHotEncoder(categories=categories, sparse=False, handle_unknown='ignore')
     
     # 'floor_level'과 'district'을 한 번에 인코딩
     encoded_features = one_hot_encoder.fit_transform(df[['floor_level', 'district', 'direction']])
