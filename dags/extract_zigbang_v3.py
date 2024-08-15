@@ -352,12 +352,12 @@ def insert_unsold_room_info(schema, table, load_schema, load_table):
         cursor.execute("BEGIN;")
         insert_sql = f"""
                 INSERT INTO {load_schema}.{load_table} (
-                room_id, floor, area, deposit, rent, maintenance_fee, address, direction
+                room_id, floor, area, deposit, rent, maintenance_fee, address, direction,
                 market_count, store_count, subway_count, restaurant_count, cafe_count, 
                 hospital_count, status
                 )
                 SELECT 
-                    room_id, floor, area, deposit, rent, maintenance_fee, address, direction
+                    room_id, floor, area, deposit, rent, maintenance_fee, address, direction,
                     market_count, store_count, subway_count, restaurant_count, cafe_count, 
                     hospital_count, 1 AS status
                 FROM {schema}.{table} t
