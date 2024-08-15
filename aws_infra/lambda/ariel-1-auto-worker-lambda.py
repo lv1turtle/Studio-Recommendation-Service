@@ -80,7 +80,6 @@ ssm = boto3.client('ssm')
 AWS_S3_BUCKET_NAME = 'team-ariel-1-dags'
 EC2_PATH = '/home/ubuntu/airflow/dags'
 
-# 루트 볼륨을 교체하는데 시간이 오래걸리니 제한 시간을 넉넉하게 둘 것!
 def lambda_handler(event, context):
     print("Received event: " + json.dumps(event, indent=2))
     
@@ -99,13 +98,12 @@ def lambda_handler(event, context):
             DocumentName="AWS-RunShellScript",
             Parameters={
                 'commands': [
-                    # S3에 적재된 dags 갱신
-                    f'aws s3 sync --delete s3://{AWS_S3_BUCKET_NAME} {EC2_PATH}',
-                    # celery worker 실행
-                    f'docker compose -f airflow/docker-compose-worker.yaml up -d'
+                    # S3에 적재된 dags 갱신 & celery worker 실행
+                    f'aws s3 sync --delete s3://{AWS_S3_BUCKET_NAME} {EC2_PATH} && docker compose -f /home/ubuntu/airflow/docker-compose-worker.yaml up -d'
                 ]
             }
         )
+        print(response)
             
     except ClientError as e:
         print(f"[ERROR] failed to start worker : {str(e)}")
