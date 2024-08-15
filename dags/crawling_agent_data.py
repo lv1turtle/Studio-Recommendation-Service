@@ -17,7 +17,8 @@ DOWNLOAD_DIR = "/opt/airflow/data/"
 # agent 데이터를 다운로드
 def download_data():
     import shutil
-
+    
+    logging.info(f"Start download file from vworld : {DOWNLOAD_DIR}")
     agent_data_to_s3.download_agent_data(DOWNLOAD_DIR)
     logging.info("Finished download file from vworld")
 
@@ -25,8 +26,9 @@ def download_data():
 
     filename = paths["csv_filename"]
     key = os.path.join(S3_DATA_DIR, paths["csv_filename"])
-
     agent_data_to_s3.upload_s3_and_remove(paths["csv_filepath"], key)
+    
+    logging.info("local -> s3 : %s -> %s", paths["csv_filepath"], key)
 
     os.remove(paths["zip_filepath"])
     shutil.rmtree(paths["extract_dir"])
@@ -37,13 +39,18 @@ def download_data():
 # agent 데이터 columns 변환 및 s3에 적재
 def transform_and_upload_csv_to_s3(**context):
     filename, data_key = context["task_instance"].xcom_pull(key="return_value", task_ids='download_data')
+    local_filepath = os.path.join(DOWNLOAD_DIR, filename)
+
     agent_data_to_s3.download_file_from_s3(data_key, DOWNLOAD_DIR)
 
-    local_filepath = os.path.join(DOWNLOAD_DIR, filename)
+    logging.info(f"s3 -> local : {data_key} -> {local_filepath}")
+
     agent_data_to_s3.transform_columns(local_filepath)
 
     agent_key = os.path.join(S3_AGENT_DIR, filename)
     agent_data_to_s3.upload_s3_and_remove(local_filepath, agent_key)
+    
+    logging.info(f"s3 -> local : {local_filepath} -> {agent_key}")
 
     return agent_key
 
