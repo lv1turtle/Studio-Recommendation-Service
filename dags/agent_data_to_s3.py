@@ -28,6 +28,11 @@ def upload_s3_and_remove(filename, key):
 
 # s3에서 로컬 볼륨에 파일 다운로드
 def download_file_from_s3(key, local_path):
+    # 파일이 로컬 시스템에 이미 존재한다면 삭제
+    local_file_path = os.path.join(local_path, os.path.basename(key))
+    if os.path.exists(local_file_path):
+        os.remove(local_file_path)
+        
     hook = S3Hook(aws_conn_id='s3_conn')
     hook.download_file(
         key=key,    # s3 경로
