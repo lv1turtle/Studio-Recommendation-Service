@@ -89,6 +89,9 @@ def lambda_handler(event, context):
     autoscalingInfo = json.loads(message)
     ec2InstanceId = autoscalingInfo['EC2InstanceId']
     
+    # 인스턴스가 실행되는데 넉넉하게 5분 대기
+    time.sleep(300)
+    
     try :
         response = ssm.send_command(
             InstanceIds = [ec2InstanceId],
@@ -105,6 +108,7 @@ def lambda_handler(event, context):
         )
             
     except ClientError as e:
+        print(f"[ERROR] failed to start worker : {str(e)}")
         return {'statusCode': 500, 'body': f'failed to start worker : {str(e)}'}
     
     return {
