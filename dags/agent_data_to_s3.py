@@ -85,7 +85,10 @@ def transform_columns(csv_file):
     df = df[["등록번호", "brkr_nm_encpt", "중개업자종별코드", "직위구분코드", "자격증번호"]]
     df.rename(columns={"등록번호":"registration_number", "brkr_nm_encpt":"agent_name", "중개업자종별코드":"agent_code", "직위구분코드":"position_code", "자격증번호":"certificate_number"}, inplace=True)
 
-    df.to_csv(csv_file, encoding="utf-8", index=False, errors="replace")
+    new_csv_file = csv_file.split(".")[0] + "_transformed.csv"
+    df.to_csv(new_csv_file, encoding="utf-8", index=False, errors="replace")
+
+    return new_csv_file
 
 
 # download한 파일을 압축 해제하여 s3에 적재하기 위해 경로를 전달
