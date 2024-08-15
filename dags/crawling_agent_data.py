@@ -113,7 +113,7 @@ with DAG(
         s3_key="{{ task_instance.xcom_pull(key='return_value', task_ids='transform_and_upload_csv_to_s3') }}",
         schema="raw_data",
         table="agency_details",
-        copy_options=['csv', 'IGNOREHEADER 1'],
+        copy_options=['csv', 'IGNOREHEADER 1', "ENCODING AS 'UTF8'"],
         redshift_conn_id="redshift_conn",
         aws_conn_id="s3_conn",
         method="REPLACE"
