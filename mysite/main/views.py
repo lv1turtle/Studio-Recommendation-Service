@@ -248,7 +248,7 @@ class PropertyDataFilteringView(APIView):
                     output_field=BooleanField(),
                 )
             )
-
+            queryset = queryset.filter(is_safe = True)
             # 편의시설 점수 계산
             queryset = queryset.annotate(
                 market_score=Case(
