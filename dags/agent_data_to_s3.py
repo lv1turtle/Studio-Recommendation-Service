@@ -12,18 +12,21 @@ import zipfile
 import os
 
 S3_BUCKET_NAME = "team-ariel-1-bucket"
-DOWNLOAD_PATH = "/opt/airflow/data/agent/" 
+DOWNLOAD_PATH = "/opt/airflow/data/" 
 
 
 # 로컬 볼륨의 파일을 s3에 적재 후 삭제
 def upload_s3_and_remove(filename, key):
-    hook = S3Hook(aws_conn_id='s3_conn')
-    hook.load_file(filename=filename,   # 로컬 파일 경로
-                    key=key,    # 저장할 s3 경로 (파일명 포함)
-                    bucket_name=S3_BUCKET_NAME,   # 버킷이름
-                    replace=True)
-    
-    os.remove(filename)
+    try:
+        hook = S3Hook(aws_conn_id='s3_conn')
+        hook.load_file(filename=filename,   # 로컬 파일 경로
+                        key=key,    # 저장할 s3 경로 (파일명 포함)
+                        bucket_name=S3_BUCKET_NAME,   # 버킷이름
+                        replace=True)
+        
+        os.remove(filename)
+    except FileNotFoundError as error:
+        print(os.listdir(DOWNLOAD_PATH))
 
 
 # s3에서 로컬 볼륨에 파일 다운로드
