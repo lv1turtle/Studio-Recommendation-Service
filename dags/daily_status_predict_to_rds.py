@@ -74,7 +74,7 @@ def predict_status(**context):
 
     predict_df = ml_pipeline.predict_status(df, model)
 
-    filepath, key = ml_pipeline.upload_dataframe_to_s3(predict_df, "predict_data.csv")
+    key = ml_pipeline.upload_dataframe_to_s3(predict_df, "predict_data.csv")
 
     return key
 
