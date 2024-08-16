@@ -13,3 +13,4 @@ imbalanced-learn==0.8.1
 selenium
 scikit-learn
 imblearn
+pymysql
