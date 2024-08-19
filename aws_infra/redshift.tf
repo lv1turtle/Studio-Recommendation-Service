@@ -4,7 +4,7 @@ resource "aws_redshift_cluster" "team-ariel-1-redshift-cluster" {
     cluster_type                        = "single-node"
     node_type                           = "dc2.large"
     master_password                     = "xxxxxxxx"
-    master_username                     = "ariel"
+    master_username                     = "xxxx"
     availability_zone                   = "ap-northeast-2d"
     cluster_parameter_group_name        = "default.redshift-1.0"
     automated_snapshot_retention_period = "1"
