@@ -7,7 +7,7 @@ on:
     paths:
       - 'dags/**'
     branches:
-      - develop
+      - main
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
-          ref: develop
+          ref: main
       
       # path-filter를 통해 dags폴더에 변화가 생겼을 시 trigger
       - uses: dorny/paths-filter@v2.11.1
