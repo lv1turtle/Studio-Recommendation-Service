@@ -194,3 +194,6 @@ https://www.erdcloud.com/d/uaBgpDCXxH6t8GXkL
 ### Webservice 관련 문의 
 - email : wjdrms0402@gmail.com
 - github : nooreong2
+
+### Infra 관련 포스팅
+- velog : [[AWS Infra - Airflow] 자취를 시작하는 분들을 위한 원룸 추천 웹 서비스 제작](https://velog.io/@skqltldnjf77/AWS-Infra-Airflow-%EC%9E%90%EC%B7%A8%EB%A5%BC-%EC%8B%9C%EC%9E%91%ED%95%98%EB%8A%94-%EB%B6%84%EB%93%A4%EC%9D%84-%EC%9C%84%ED%95%9C-%EC%9B%90%EB%A3%B8-%EC%B6%94%EC%B2%9C-%EC%9B%B9-%EC%84%9C%EB%B9%84%EC%8A%A4-%EC%A0%9C%EC%9E%91-caqviqcv)
