@@ -66,8 +66,8 @@ docker compose -f docker-compose-worker.yaml up -d
 ![data pipeline jpg](https://github.com/user-attachments/assets/b2bb6ff8-f08f-47d6-9d22-08454ca698a6)
 
 ## INFRA
-### AWS Architecutre
-![aws architecture1 jpg](https://github.com/user-attachments/assets/38341668-0d7d-4f30-8050-cd482edc1024)
+### AWS Architecture
+![image](https://github.com/user-attachments/assets/968d959d-6a45-4793-a005-ce4bb0404b78)
 
 ### AWS EC2 Auto Scaling Group - Airflow worker
 ![autoscaling jpg](https://github.com/user-attachments/assets/cc0b9075-70c0-464d-ac9f-62addc4e6c8e)
