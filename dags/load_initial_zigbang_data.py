@@ -81,7 +81,7 @@ def clear_data(filename: str) -> None:
 
 # DAG 정의
 with DAG('load_initial_zigbang_data',
-        schedule_interval='@once',  # 최초에 한 번만 실행
+        schedule='@once',  # 최초에 한 번만 실행
         start_date=datetime(2024, 7, 26),
         catchup=False,
         ) as dag:
@@ -89,7 +89,6 @@ with DAG('load_initial_zigbang_data',
     fetch_room_ids = PythonOperator(
         task_id='fetch_room_ids',
         python_callable=fetch_room_ids,
-        provide_context=True,
         dag=dag,
     )
 

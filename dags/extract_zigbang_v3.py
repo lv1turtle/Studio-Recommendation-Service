@@ -1,7 +1,7 @@
 import requests
 from time import sleep
 import pandas as pd
-from airflow.hooks.postgres_hook import PostgresHook
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 # kakaomap API
 KAKAOMAP_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'

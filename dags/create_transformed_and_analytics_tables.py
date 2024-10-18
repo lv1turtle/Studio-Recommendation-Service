@@ -234,7 +234,7 @@ def analytics_property_not_certificate(**context):
 dag = DAG(
     dag_id = 'create_transformed_and_analytics_tables',
     start_date = datetime(2024, 7, 1),
-    schedule_interval = None,
+    schedule = None,
     catchup = False,
     default_args = {
         'owner' : 'sangmin',

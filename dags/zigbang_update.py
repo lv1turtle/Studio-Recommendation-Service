@@ -83,7 +83,7 @@ def load_to_s3(**context):
 
 
 with DAG('zigbang_update',
-        schedule_interval='0 2 * * *',
+        schedule='0 2 * * *',
         start_date=datetime(2024, 7, 1),
         catchup=False
         ) as dag:

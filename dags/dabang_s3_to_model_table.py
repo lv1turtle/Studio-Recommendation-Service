@@ -99,7 +99,7 @@ with DAG(
     "s3_parquet_compare",
     default_args=default_args,
     description="Compare two parquet files in S3 and save missing data to Redshift",
-    schedule_interval="0 7 * * *",
+    schedule="0 7 * * *",
     start_date=datetime(2023, 8, 1),
     catchup=False,
 ) as dag:
