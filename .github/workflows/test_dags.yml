@@ -1,12 +1,8 @@
-name: '[CI] Linting & DAG Integrity Testing & Code Formating'
+name: '[CI] Linting & DAG Integrity Testing & Code Formatting'
 
-# dags폴더 내로 PR 혹은 Push가 되면 trigger
+# PR시 trigger
 on:
-  push:
-    paths:
-      - 'dags/**'
-    branches:
-      - develop
+  pull_request
 
 # lint를 위해 읽기 허용
 permissions:
@@ -14,13 +10,15 @@ permissions:
 
 jobs:
   ci_process:
+    # 현재 브랜치에 PR이 fork되었을때만 실행
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     steps:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
-          ref: develop
+          ref: ${{ github.head_ref }}
 
       - uses: actions/setup-python@v4
         with:
@@ -37,14 +35,51 @@ jobs:
         run: |  
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  # syntax 에러 및 정의되지 않은 이름이 발견되면 빌드 중지
       
-      - name: Airflow Integrity Test # pytest를 사용하여 테스트 실행
+      - name: Airflow Integrity Test # DAG파일들에 대해 pytest를 사용하여 테스트 실행
         run: |  
           pytest
 
-  # Code Formating
+  # Code Formatting
+  code_format:
+    needs : ci_process
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install black isort # code format 관련 packages설치
+
+      - name: formatting
+        run: |  
+          black . # 코드 가독성 보완
+          isort . # import 정렬
+      
+      # code formatting으로 변화된 파일이 있다면 감지
+      - name: Check for modified files
+        id: git-check
+        run: echo "modified=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)" >> $GITHUB_OUTPUT
+
+      # code format된 파일들을 push
+      - name: Push changes
+        if: steps.git-check.outputs.modified == 'true'
+        run: |
+          git config --global user.name 'lv1turtle'
+          git config --global user.email 'skqltldnjf77@gmail.com'
+          git remote set-url origin https://x-access-token:${{ secrets.TOKEN }}@github.com/${{ github.repository }}
+          git commit -am "Automated changes for formatting"
+          git push
 
   # Call CD
   cd_process:
-    needs: ci_process
+    needs: code_format
     uses: ./.github/workflows/deploy_dags.yml
 
