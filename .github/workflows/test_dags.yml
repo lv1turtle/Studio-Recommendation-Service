@@ -46,5 +46,5 @@ jobs:
   # Call CD
   cd_process:
     needs: ci_process
-    uses: ./.github/workflows/test_dags.yml
+    uses: ./.github/workflows/deploy_dags.yml
 
