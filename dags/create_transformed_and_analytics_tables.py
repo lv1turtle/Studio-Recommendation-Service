@@ -1,14 +1,13 @@
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.operators.python import PythonOperator
-from airflow import DAG
+from datetime import datetime, timedelta
 
-from datetime import datetime
-from datetime import timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 
 # Redshift 연결
 def get_redshift_conn(autocommit=True):
-    hook = PostgresHook(postgres_conn_id = 'redshift_conn')
+    hook = PostgresHook(postgres_conn_id="redshift_conn")
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
@@ -232,71 +231,71 @@ def analytics_property_not_certificate(**context):
 
 
 dag = DAG(
-    dag_id = 'create_transformed_and_analytics_tables',
-    start_date = datetime(2024, 7, 1),
-    schedule = None,
-    catchup = False,
-    default_args = {
-        'owner' : 'sangmin',
-        'retries' : 2,
-        'retry_delay': timedelta(minutes=1),
-    }
+    dag_id="create_transformed_and_analytics_tables",
+    start_date=datetime(2024, 7, 1),
+    schedule=None,
+    catchup=False,
+    default_args={
+        "owner": "sangmin",
+        "retries": 2,
+        "retry_delay": timedelta(minutes=1),
+    },
 )
 
 transform_property = PythonOperator(
-    task_id = 'transform_property',
-    python_callable = transform_property,
-    params = {'schema' : 'transformed',
-            'table' : 'property'},
-    dag = dag
+    task_id="transform_property",
+    python_callable=transform_property,
+    params={"schema": "transformed", "table": "property"},
+    dag=dag,
 )
 
 analytics_property_position_and_fee = PythonOperator(
-    task_id = 'analytics_property_position_and_fee',
-    python_callable = analytics_property_position_and_fee,
-    params = {'schema' : 'analytics',
-            'table' : 'property_position_and_fee'},
-    dag = dag
+    task_id="analytics_property_position_and_fee",
+    python_callable=analytics_property_position_and_fee,
+    params={"schema": "analytics", "table": "property_position_and_fee"},
+    dag=dag,
 )
 
 analytics_property_having_all_facility_count = PythonOperator(
-    task_id = 'analytics_property_having_all_facility_count',
-    python_callable = analytics_property_having_all_facility_count,
-    params = {'schema' : 'analytics',
-            'table' : 'property_having_all_facility_count'},
-    dag = dag
+    task_id="analytics_property_having_all_facility_count",
+    python_callable=analytics_property_having_all_facility_count,
+    params={"schema": "analytics", "table": "property_having_all_facility_count"},
+    dag=dag,
 )
 
 analytics_property_agency_count = PythonOperator(
-    task_id = 'analytics_property_agency_count',
-    python_callable = analytics_property_agency_count,
-    params = {'schema' : 'analytics',
-            'table' : 'property_agency_count'},
-    dag = dag
+    task_id="analytics_property_agency_count",
+    python_callable=analytics_property_agency_count,
+    params={"schema": "analytics", "table": "property_agency_count"},
+    dag=dag,
 )
 
 analytics_property_floor_count = PythonOperator(
-    task_id = 'analytics_property_floor_count',
-    python_callable = analytics_property_floor_count,
-    params = {'schema' : 'analytics',
-            'table' : 'property_floor_count'},
-    dag = dag
+    task_id="analytics_property_floor_count",
+    python_callable=analytics_property_floor_count,
+    params={"schema": "analytics", "table": "property_floor_count"},
+    dag=dag,
 )
 
 analytics_agency_certificate_count = PythonOperator(
-    task_id = 'analytics_agency_certificate_count',
-    python_callable = analytics_agency_certificate_count,
-    params = {'schema' : 'analytics',
-            'table' : 'agency_certificate_count'},
-    dag = dag
+    task_id="analytics_agency_certificate_count",
+    python_callable=analytics_agency_certificate_count,
+    params={"schema": "analytics", "table": "agency_certificate_count"},
+    dag=dag,
 )
 
 analytics_property_not_certificate = PythonOperator(
-    task_id = 'analytics_property_not_certificate',
-    python_callable = analytics_property_not_certificate,
-    params = {'schema' : 'analytics',
-            'table' : 'property_not_certificate'},
-    dag = dag
+    task_id="analytics_property_not_certificate",
+    python_callable=analytics_property_not_certificate,
+    params={"schema": "analytics", "table": "property_not_certificate"},
+    dag=dag,
 )
 
-transform_property >> [analytics_property_position_and_fee, analytics_property_having_all_facility_count, analytics_property_agency_count, analytics_property_floor_count, analytics_agency_certificate_count, analytics_property_not_certificate]
+transform_property >> [
+    analytics_property_position_and_fee,
+    analytics_property_having_all_facility_count,
+    analytics_property_agency_count,
+    analytics_property_floor_count,
+    analytics_agency_certificate_count,
+    analytics_property_not_certificate,
+]
