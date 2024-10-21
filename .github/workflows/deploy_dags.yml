@@ -12,8 +12,8 @@ jobs:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
-          ref: ${{ github.head_ref }}
-          
+          ref: ${{ github.ref_name }}
+
       # path-filter를 통해 dags 폴더의 변화를 감지
       - uses: dorny/paths-filter@v3
         id: check
@@ -32,7 +32,7 @@ jobs:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
 
       # AWS IAM 계정을 등록 (EC2FullAccess 필수)
       # AWS CLI 사용을 위함

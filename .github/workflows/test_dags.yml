@@ -3,11 +3,6 @@ name: '[CI] Linting & DAG Integrity Testing'
 # PR시 검사하도록 설정 
 on:
   pull_request :
-  # manual 버튼을 통해 test 가능
-  workflow_dispatch:
-    inputs:
-      tags:
-        description: 'CI Test'
 
 # lint를 위해 읽기 허용
 permissions:
@@ -21,6 +16,7 @@ jobs:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
+          # 대상은 PR을 요청한 branch
           ref: ${{ github.head_ref }}
 
       - uses: actions/setup-python@v4

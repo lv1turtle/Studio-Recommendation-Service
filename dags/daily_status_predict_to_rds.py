@@ -106,7 +106,7 @@ with DAG(
     dag_id="daily_status_predict_to_rds",
     start_date=datetime(2024, 7, 1),
     catchup=False,
-    schedule_interval=None,
+    schedule=None,
     default_args=default_args,
 ) as dag:
     fetch_transform_train_data = PythonOperator(
