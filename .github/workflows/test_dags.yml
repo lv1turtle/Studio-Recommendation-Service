@@ -6,13 +6,13 @@ on:
 
   # manual 버튼을 통해 test 가능
   workflow_dispatch:
-  inputs:
-    logLevel:
-      description: 'Log level'     
-      required: true
-      default: 'warning'
-    tags:
-      description: 'CI Test'
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tags:
+        description: 'CI Test'
 
 # lint를 위해 읽기 허용
 permissions:
