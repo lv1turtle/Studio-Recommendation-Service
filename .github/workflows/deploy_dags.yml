@@ -25,7 +25,7 @@ jobs:
   upload_to_S3:
     # dags 폴더에 변화가 있을 때만 실행
     needs: check_changes
-    if: ${{ needs.changes.outputs.dags == 'true' }}
+    if: ${{ needs.check_changes.outputs.dags == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
