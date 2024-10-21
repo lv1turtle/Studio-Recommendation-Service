@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 import agent_data_to_s3
-from airflow import DAG
+from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.amazon.aws.transfers.s3_to_redshift import \
