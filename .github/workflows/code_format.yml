@@ -1,7 +1,11 @@
-name: 'Code Formatting'
+name: 'Code Formatting & Calling CD'
 
+# main에 push가 될때만 한해서 code format과 CD process를 적용.
+# (다른 branch에서 개발을 진행할 때 매 push마다 deploy되면 안되므로 CI 검증을 끝낸 main에만 적용)
 on:
-  push
+  push:
+    branches:
+      - main
 
 jobs:
   # Code Formatting

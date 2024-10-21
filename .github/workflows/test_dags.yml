@@ -1,8 +1,18 @@
 name: '[CI] Linting & DAG Integrity Testing'
 
-# PR시 trigger
+# PR시 검사하도록 설정
 on:
-  pull_request
+  [pull_request]
+
+  # manual 버튼을 통해 test 가능
+  workflow_dispatch:
+  inputs:
+    logLevel:
+      description: 'Log level'     
+      required: true
+      default: 'warning'
+    tags:
+      description: 'CI Test'
 
 # lint를 위해 읽기 허용
 permissions:
@@ -10,8 +20,6 @@ permissions:
 
 jobs:
   ci_process:
-    # 현재 브랜치에 PR이 fork되었을때만 실행
-    #if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     steps:
