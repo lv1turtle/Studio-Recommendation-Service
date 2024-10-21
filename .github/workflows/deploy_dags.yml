@@ -3,7 +3,7 @@ name: '[CD] Upload to S3 Bucket & Deploy to EC2 with Lambda'
 on : [workflow_call]
 
 jobs:
-  changes:
+  check_changes:
     runs-on: ubuntu-latest
     outputs:
       dags: ${{ steps.check.outputs.dags }}
@@ -19,7 +19,7 @@ jobs:
 
   upload_to_S3:
     # dags 폴더에 변화가 있을 때만 실행
-    needs: changes
+    needs: check_changes
     if: ${{ needs.changes.outputs.dags == 'true' }}
     runs-on: ubuntu-latest
 
