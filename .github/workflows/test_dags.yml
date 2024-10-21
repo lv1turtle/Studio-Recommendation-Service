@@ -6,13 +6,6 @@ on:
 
   # manual 버튼을 통해 test 가능
   workflow_dispatch:
-    branches :
-      develop
-      #${{ github.ref_name }} 
-    
-    inputs:
-      tags:
-        description: 'CI Test'
 
 # lint를 위해 읽기 허용
 permissions:
