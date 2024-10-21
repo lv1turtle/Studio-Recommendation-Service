@@ -27,14 +27,14 @@ jobs:
           black . # 코드 가독성 보완
           isort . # import 정렬
       
-      # code formatting으로 변화된 파일이 있다면 감지
+      # 변화된 파일이 있는 지 감지
       - name: Check for modified files
         id: git-check
-        run: echo "modified=$(if git diff-index --quiet HEAD --; then echo "false"; else echo "true"; fi)" >> $GITHUB_OUTPUT
+        run: git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
 
-      # code format된 파일들을 push
+      # 변화된 파일이 있다면 push
       - name: Push changes
-        if: steps.git-check.outputs.modified == 'true'
+        if: steps.git-check.outputs.changed == 'true'
         run: |
           git config --global user.name 'Hyoungwon'
           git config --global user.email 'skqltldnjf77@gmail.com'
