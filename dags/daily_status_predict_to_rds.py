@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 import ml_pipeline
-from airflow import DAG
+from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 
 
