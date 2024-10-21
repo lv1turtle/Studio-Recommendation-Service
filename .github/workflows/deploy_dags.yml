@@ -15,7 +15,7 @@ jobs:
         with:
           filters: |
             dags:
-              - 'dags/**
+              - 'dags/**'
 
   upload_to_S3:
     # dags 폴더에 변화가 있을 때만 실행
