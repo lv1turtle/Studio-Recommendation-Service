@@ -6,11 +6,10 @@ on:
 
   # manual 버튼을 통해 test 가능
   workflow_dispatch:
+    branches :
+      ${{ github.ref_name }} 
+    
     inputs:
-      logLevel:
-        description: 'Log level'     
-        required: true
-        default: 'warning'
       tags:
         description: 'CI Test'
 
