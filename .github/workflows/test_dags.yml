@@ -1,0 +1,44 @@
+name: '[CI] Linting & DAG Integrity Testing'
+
+# PR시 검사하도록 설정 
+on:
+  pull_request :
+  # manual 버튼을 통해 test 가능
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'CI Test'
+
+# lint를 위해 읽기 허용
+permissions:
+  contents: read
+
+jobs:
+  ci_process:
+    runs-on: ubuntu-latest
+
+    steps:
+      # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
+      - uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest  # flake8과 pytest 설치
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # flake8을 통해 Lint (코드 스타일 및 에러 검사)
+      - name: Lint with flake8
+        run: |  
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics  # syntax 에러 및 정의되지 않은 이름이 발견되면 빌드 중지
+      
+      - name: Airflow Integrity Test # DAG파일들에 대해 pytest를 사용하여 테스트 실행
+        run: |  
+          pytest
+

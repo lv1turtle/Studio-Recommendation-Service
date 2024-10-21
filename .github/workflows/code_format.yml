@@ -1,0 +1,53 @@
+name: 'Code Formatting & Calling CD'
+
+# main에 push가 될때만 한해서 code format과 CD process를 적용.
+# (다른 branch에서 개발을 진행할 때 매 push마다 deploy되면 안되므로 CI 검증을 끝낸 main에만 적용)
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Code Formatting
+  code_format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install black isort # code format 관련 packages설치
+
+      - name: formatting
+        run: |  
+          black . # 코드 가독성 보완
+          isort . # import 정렬
+      
+      # 변화된 파일이 있는 지 감지
+      - name: Check for modified files
+        id: git-check
+        run: git diff --quiet . || echo "changed=true" >> $GITHUB_OUTPUT
+
+      # 변화된 파일이 있다면 push
+      - name: Push changes
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git config --global user.name 'Hyoungwon'
+          git config --global user.email 'skqltldnjf77@gmail.com'
+          git remote set-url origin https://x-access-token:${{ secrets.TOKEN }}@github.com/${{ github.repository }}
+          git commit -am "Automated changes for formatting"
+          git push
+
+  # Call CD
+  cd_process:
+    needs: code_format
+    uses: ./.github/workflows/deploy_dags.yml
+

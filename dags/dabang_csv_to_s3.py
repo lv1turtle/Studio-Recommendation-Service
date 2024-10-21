@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -33,15 +34,14 @@ def upload_to_s3(**kwargs):
 
 with DAG(
     "dabang_upload_to_s3",
-    schedule_interval="0 3 * * *",
+    schedule="0 3 * * *",
     start_date=datetime(2024, 7, 1),
     catchup=False,
 ) as dag:
 
     fetch = PythonOperator(
-        task_id="fetch_data", 
-        python_callable=fetch_data, 
-        provide_context=True  
+        task_id="fetch_data",
+        python_callable=fetch_data,
     )
 
     save_upload = PythonOperator(
@@ -51,9 +51,8 @@ with DAG(
             "key": "dabang/save/{{ ds }}/dabang_{{ ds }}.parquet",
             "bucket_name": "team-ariel-1-bucket",
         },
-        provide_context=True,
     )
-    
+
     overwrite_upload = PythonOperator(
         task_id="overwrite_upload",
         python_callable=upload_to_s3,
@@ -61,7 +60,6 @@ with DAG(
             "key": "dabang/overwrite/dabang.parquet",
             "bucket_name": "team-ariel-1-bucket",
         },
-        provide_context=True,
     )
 
 fetch >> overwrite_upload >> save_upload

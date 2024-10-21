@@ -1,6 +1,7 @@
-import requests
 import re
+
 import pandas as pd
+import requests
 from airflow.models.variable import Variable
 
 # API 키 모음
@@ -158,8 +159,7 @@ def process_rooms(room_list):
                 "address": address,
                 "latitude": float(lat),
                 "longitude": float(lng),
-                "property_link": "https://www.dabangapp.com/room/"
-                + room.get("id"),
+                "property_link": "https://www.dabangapp.com/room/" + room.get("id"),
                 "registration_number": registration_number,
                 "agency_name": registration_name,
                 "agent_name": agent_name,
@@ -192,24 +192,24 @@ def save_to_parquet(data, filename):
     df["latitude"] = df["latitude"].astype("float32")
     df["longitude"] = df["longitude"].astype("float32")
 
-    df["market_count"] = pd.to_numeric(
-        df["market_count"], errors="coerce"
-    ).astype(pd.Int64Dtype())
-    df["store_count"] = pd.to_numeric(
-        df["store_count"], errors="coerce"
-    ).astype(pd.Int64Dtype())
-    df["subway_count"] = pd.to_numeric(
-        df["subway_count"], errors="coerce"
-    ).astype(pd.Int64Dtype())
+    df["market_count"] = pd.to_numeric(df["market_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["store_count"] = pd.to_numeric(df["store_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
+    df["subway_count"] = pd.to_numeric(df["subway_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
     df["restaurant_count"] = pd.to_numeric(
         df["restaurant_count"], errors="coerce"
     ).astype(pd.Int64Dtype())
     df["cafe_count"] = pd.to_numeric(df["cafe_count"], errors="coerce").astype(
         pd.Int64Dtype()
     )
-    df["hospital_count"] = pd.to_numeric(
-        df["hospital_count"], errors="coerce"
-    ).astype(pd.Int64Dtype())
+    df["hospital_count"] = pd.to_numeric(df["hospital_count"], errors="coerce").astype(
+        pd.Int64Dtype()
+    )
 
     df["nearest_subway_distance"] = pd.to_numeric(
         df["nearest_subway_distance"], errors="coerce"
@@ -248,6 +248,7 @@ def get_data_by_range(start, end):
     file_path = "/opt/airflow/data/dabang.parquet"
     save_to_parquet(data_for_parquet, file_path)
     return file_path
+
 
 def get_data_all():
     cnt = 0

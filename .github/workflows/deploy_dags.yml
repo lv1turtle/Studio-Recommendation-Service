@@ -1,31 +1,38 @@
-name: 'Build and upload to S3 Bucket & Deploy to EC2 with Lambda'
+name: '[CD] Upload to S3 Bucket & Deploy to EC2 with Lambda'
 
-# dags폴더 내로 PR 혹은 Push가 되면 trigger
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - 'dags/**'
-    branches:
-      - main
+on : [workflow_call]
 
 jobs:
-  build:
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      dags: ${{ steps.check.outputs.dags }}
+    
+    steps:
+      # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
+      - uses: actions/checkout@v3.3.0
+        with:
+          ref: ${{ github.head_ref }}
+          
+      # path-filter를 통해 dags 폴더의 변화를 감지
+      - uses: dorny/paths-filter@v3
+        id: check
+        with:
+          filters: |
+            dags:
+              - 'dags/**'
+
+  upload_to_S3:
+    # dags 폴더에 변화가 있을 때만 실행
+    needs: check_changes
+    if: ${{ needs.changes.outputs.dags == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
       # CI 서버에서 repo로부터 코드를 내려받을 수 있도록 함
       - uses: actions/checkout@v3.3.0
         with:
-          ref: main
-      
-      # path-filter를 통해 dags폴더에 변화가 생겼을 시 trigger
-      - uses: dorny/paths-filter@v2.11.1
-        id: changes
-        with:
-          filters: |
-            dags:
-              - 'dags/**'
+          ref: ${{ github.head_ref }}
 
       # AWS IAM 계정을 등록 (EC2FullAccess 필수)
       # AWS CLI 사용을 위함
@@ -44,7 +51,7 @@ jobs:
 
   deploy:
     # 위의 S3 적재 과정이 완료된 후에 동작
-    needs: build
+    needs: upload_to_S3
     runs-on: ubuntu-latest
 
     steps:

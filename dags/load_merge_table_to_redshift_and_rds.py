@@ -1,20 +1,18 @@
-from airflow.providers.postgres.hooks.postgres import PostgresHook
+import os
+from datetime import datetime, timedelta
+
+from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from airflow.models import Variable
-from airflow import DAG
-
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.providers.mysql.hooks.mysql import MySqlHook
-import os
-
-from datetime import datetime
-from datetime import timedelta
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 
 
 # Redshift 연결
 def get_redshift_conn(autocommit=True):
-    hook = PostgresHook(postgres_conn_id = 'redshift_conn')
+    hook = PostgresHook(postgres_conn_id="redshift_conn")
     conn = hook.get_conn()
     conn.autocommit = autocommit
     return conn.cursor()
@@ -168,17 +166,17 @@ def unload_merge_table(**context):
         print(error)
         cur.execute("ROLLBACK;")
         raise
-    
+
 
 # UNLOAD된 파일을 RDS(mysql)에 적재
 def load_merge_table_to_rds(**context):
     table = context["params"]["table"]
     uri = context["params"]["uri"]
 
-    s3_hook = S3Hook(aws_conn_id= 's3_conn')
+    s3_hook = S3Hook(aws_conn_id="s3_conn")
     file = s3_hook.download_file(key=f"{uri}000")
     try:
-        mysql = MySqlHook(mysql_conn_id='rds_conn', local_infile=True)
+        mysql = MySqlHook(mysql_conn_id="rds_conn", local_infile=True)
         conn = mysql.get_conn()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM production.property")
@@ -201,50 +199,52 @@ def load_merge_table_to_rds(**context):
 
 
 dag = DAG(
-    dag_id = 'load_merge_table_to_redshift_and_rds',
-    start_date = datetime(2024, 7, 1),
-    schedule_interval = '0 6 * * *',
-    catchup = False,
-    default_args = {
-        'owner' : 'sangmin',
-        'retries' : 2,
-        'retry_delay': timedelta(minutes=1),
-    }
+    dag_id="load_merge_table_to_redshift_and_rds",
+    start_date=datetime(2024, 7, 1),
+    schedule_interval="0 6 * * *",
+    catchup=False,
+    default_args={
+        "owner": "sangmin",
+        "retries": 2,
+        "retry_delay": timedelta(minutes=1),
+    },
 )
 
 load_dabang_data_to_external_from_s3 = PythonOperator(
-    task_id = 'load_dabang_data_to_external_from_s3',
-    python_callable = load_dabang_data_to_external_from_s3,
-    params = {'uri' : Variable.get("dabang_s3_uri"),
-            'schema' : 'external_schema',
-            'table' : 'dabang'},
-    dag = dag
+    task_id="load_dabang_data_to_external_from_s3",
+    python_callable=load_dabang_data_to_external_from_s3,
+    params={
+        "uri": Variable.get("dabang_s3_uri"),
+        "schema": "external_schema",
+        "table": "dabang",
+    },
+    dag=dag,
 )
 
 load_merge_table_with_dabang_and_zigbang = PythonOperator(
-    task_id = 'load_merge_table_with_dabang_and_zigbang',
-    python_callable = load_merge_table_with_dabang_and_zigbang,
-    params = {'schema' : 'raw_data',
-            'table' : 'property'},
-    dag = dag
+    task_id="load_merge_table_with_dabang_and_zigbang",
+    python_callable=load_merge_table_with_dabang_and_zigbang,
+    params={"schema": "raw_data", "table": "property"},
+    dag=dag,
 )
 
 unload_merge_table = PythonOperator(
-    task_id = 'unload_merge_table',
-    python_callable = unload_merge_table,
-    params = {'uri' : Variable.get("unload_s3_uri"),
-            'iam_role' : Variable.get("redshift_iam_role"),
-            'schema' : 'raw_data',
-            'table' : 'property'},
-    dag = dag
+    task_id="unload_merge_table",
+    python_callable=unload_merge_table,
+    params={
+        "uri": Variable.get("unload_s3_uri"),
+        "iam_role": Variable.get("redshift_iam_role"),
+        "schema": "raw_data",
+        "table": "property",
+    },
+    dag=dag,
 )
 
 load_merge_table_to_rds = PythonOperator(
-    task_id = 'load_merge_table_to_rds',
-    python_callable = load_merge_table_to_rds,
-    params = {'uri' : Variable.get("unload_s3_uri"),
-            'table' : 'property'},
-    dag = dag
+    task_id="load_merge_table_to_rds",
+    python_callable=load_merge_table_to_rds,
+    params={"uri": Variable.get("unload_s3_uri"), "table": "property"},
+    dag=dag,
 )
 
 # create_transformed_and_analytics_tables DAG를 Trigger하기 위한 Task
@@ -253,7 +253,7 @@ trigger_create_transformed_and_analytics_tables = TriggerDagRunOperator(
     trigger_dag_id="create_transformed_and_analytics_tables",
     execution_date="{{ ds }}",
     reset_dag_run=True,
-    wait_for_completion=True
+    wait_for_completion=True,
 )
 
 # daily_status_predict_to_rds DAG를 Trigger하기 위한 Task
@@ -262,8 +262,17 @@ trigger_daily_status_predict_to_rds = TriggerDagRunOperator(
     trigger_dag_id="daily_status_predict_to_rds",
     execution_date="{{ ds }}",
     reset_dag_run=True,
-    wait_for_completion=True
+    wait_for_completion=True,
 )
 
-load_dabang_data_to_external_from_s3 >> load_merge_table_with_dabang_and_zigbang >> trigger_create_transformed_and_analytics_tables
-load_merge_table_with_dabang_and_zigbang >> unload_merge_table >> load_merge_table_to_rds >> trigger_daily_status_predict_to_rds
+(
+    load_dabang_data_to_external_from_s3
+    >> load_merge_table_with_dabang_and_zigbang
+    >> trigger_create_transformed_and_analytics_tables
+)
+(
+    load_merge_table_with_dabang_and_zigbang
+    >> unload_merge_table
+    >> load_merge_table_to_rds
+    >> trigger_daily_status_predict_to_rds
+)
