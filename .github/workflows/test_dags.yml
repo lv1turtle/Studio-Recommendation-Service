@@ -3,9 +3,11 @@ name: '[CI] Linting & DAG Integrity Testing'
 # PR시 검사하도록 설정 
 on:
   pull_request :
-
   # manual 버튼을 통해 test 가능
   workflow_dispatch:
+    inputs:
+      tags:
+        description: 'CI Test'
 
 # lint를 위해 읽기 허용
 permissions:
