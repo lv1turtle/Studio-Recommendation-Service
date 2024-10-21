@@ -201,7 +201,7 @@ def load_merge_table_to_rds(**context):
 dag = DAG(
     dag_id="load_merge_table_to_redshift_and_rds",
     start_date=datetime(2024, 7, 1),
-    schedule_interval="0 6 * * *",
+    schedule="0 6 * * *",
     catchup=False,
     default_args={
         "owner": "sangmin",
@@ -251,7 +251,7 @@ load_merge_table_to_rds = PythonOperator(
 trigger_create_transformed_and_analytics_tables = TriggerDagRunOperator(
     task_id="trigger_create_transformed_and_analytics_tables",
     trigger_dag_id="create_transformed_and_analytics_tables",
-    execution_date="{{ ds }}",
+    logical_date="{{ ds }}",
     reset_dag_run=True,
     wait_for_completion=True,
 )
@@ -260,7 +260,7 @@ trigger_create_transformed_and_analytics_tables = TriggerDagRunOperator(
 trigger_daily_status_predict_to_rds = TriggerDagRunOperator(
     task_id="trigger_daily_status_predict_to_rds",
     trigger_dag_id="daily_status_predict_to_rds",
-    execution_date="{{ ds }}",
+    logical_date="{{ ds }}",
     reset_dag_run=True,
     wait_for_completion=True,
 )

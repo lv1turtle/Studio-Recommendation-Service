@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3.3.0
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v4
         with:
